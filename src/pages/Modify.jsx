@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
-function Detail() {
+function Modify() {
   const {id} = useParams();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ function Detail() {
         setLoading(false); 
       })
   }, [id]);
-
+  
 // 렌더링 오류 방지 코드임
   if (loading) {
     return <div>게시글 로딩 중</div>
@@ -36,8 +36,7 @@ function Detail() {
   if (!article || Object.keys(article).length == 0) {
     return <div>게시글이 없습니다.</div>
   }
-
-  return (
+return (
     <div>
       <Link to="/">홈으로</Link>
       <Link to="/list">목록으로 돌아가기</Link>
@@ -62,11 +61,7 @@ function Detail() {
           {article.sideContent}
         </div>
       </div>
-
-      <div>
-        <Link to="/modify">게시글 수정하기</Link>
-      </div>
     </div>
   );
 }
-export default Detail;
+export default Modify;

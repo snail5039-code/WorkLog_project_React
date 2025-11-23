@@ -18,7 +18,7 @@ function Write(){
     console.log("비고작성내용", postData.sideContent);
 
     try {
-      const response = await fetch('/api/usr/work/workLog',{
+      const response = await fetch('http://localhost:8081/api/usr/work/workLog',{
         method: 'post',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify(postData)
@@ -52,7 +52,6 @@ function Write(){
         <div className="p-4">글꼴 선택창</div>
         <div className="p-4">파일 업로드창</div>
       </div>
-      
       <div className="flex items-start space-x-4">
         <div className="w-20 pt-2 font-semibold">메인 작성란</div>
         <input className="border border-blue-500 rounded p-2 flex-grow" type="text" placeholder="여기에 작성하세요" value={mainContent} onChange={(e) => setMainContent(e.target.value)}/> 
