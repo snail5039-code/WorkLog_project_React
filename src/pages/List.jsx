@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'; 
 
+
+// 디자인은 차후 수정 예정
 function List() {
 
   const [articles, setArticles] = useState([]);
@@ -27,35 +29,49 @@ function List() {
   }, []);
 
   return (
-    <div>
-      <Link to="/">홈으로</Link>
-      <h2>게시글 목록</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>번호</th>
-            <th>제목</th>
-            <th>작성자</th>
-            <th>작성일</th>
-          </tr>
-        </thead>
-        <tbody>
+   <div className="p-6 max-w-4xl mx-auto bg-white shadow-lg rounded-xl">
+      <div className="mb-4">
+        <Link to="/" className="text-blue-500 hover:text-blue-700 font-medium">
+          홈으로
+        </Link>
+      </div>
+      
+      <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">게시글 목록</h2>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-1/12">번호</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-6/12">제목</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-2/12">작성자</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider w-3/12">작성일</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {articles && articles.length > 0 ? (
               articles.map((article) => (
-                <tr key={article.id}>
-                  <td>{article.id}</td>
-                  <td><Link to={`/detail/${article.id}`}> {article.title}</Link></td>
-                  <td>{article.writerName}</td>
-                  <td>{article.regDate}</td>
+                <tr key={article.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{article.id}</td>
+                  <td className="px-4 py-3 whitespace-normal text-sm font-medium">
+                    <Link to={`/detail/${article.id}`} className="text-gray-800 hover:text-indigo-600 transition duration-150">
+                      {article.title}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{article.writerName}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{article.regDate}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td>등록된 게시글이 없습니다.</td>
-              </tr>  
-            )}          
-        </tbody>
-      </table>
+                <td colSpan="4" className="px-4 py-6 text-center text-gray-500 text-base font-medium">
+                  등록된 게시글이 없습니다.
+                </td>
+              </tr>  
+            )}          
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
