@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
+import { AuthContext, AuthProvider } from './context/AuthContext';  // 마찬가지로 여기도 해줘야 함
 
 import Home from './pages/Home';
 import List from './pages/List';
@@ -15,6 +16,7 @@ import MyPage from './pages/MyPage';
 
 function App(){
   return (
+    <AuthProvider>    
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -28,6 +30,7 @@ function App(){
           <Route path="/logout/" element={<Logout />} />
         </Routes>
       </BrowserRouter>
+    </AuthProvider>
   );
 }
 export default App;

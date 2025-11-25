@@ -1,19 +1,38 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; 
+import { Link, useNavigate } from 'react-router-dom'; 
 import DaumPostcodeEmbed from 'react-daum-postcode';
+import { Button, Input, Form, Checkbox, Modal, message, Select } from 'antd';
+import Password from 'antd/es/input/Password';
+import { UserOutlined, LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 
 
 // 디자인은 차후 수정 예정
 function Join() {
-  const [loginId, setLoginId] = React.useState('');
-  const [loginPw, setLoginPw] = React.useState('');
-  const [name, setName] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [sex, setSex] = React.useState('C');
-  const [address, setAddress] = React.useState('');
+  const navigate = useNavigate();
+
+  const [loginId, setLoginId] = useState('');
+  const [loginPw, setLoginPw] = useState('');
+  const [loginPwChk, setLoginPwChk] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [sex, setSex] = useState('C');
+  const [address, setAddress] = useState('');
 
   const [isPostcodeOpen, setIsPostcodeOpen] = useState(false);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+
+  const openModal = (message) => {
+    setModalMessage(message);
+    setIsModalOpen(true);
+  }
+
+  const closeModal = () => {
+    setModalMessage('');
+    setIsModalOpen(true);
+  }
+  
   const handleComplete = (data) => {
     let fullAddress = data.address;
     let extraAddress = '';
@@ -30,209 +49,246 @@ function Join() {
     setAddress(fullAddress);
 
     setIsPostcodeOpen(false);
-    console.log(fullAddress); // e.g. '서울 성동구 왕십리로2길 20 (성수동1가)'
   };
   
-
   const handleSubmit = async () => {
 
+    // if(loginPw !== loginPwChk ) {
+    //   openModal("비밀번호가 일치하지 않습니다.");
+    //   return;
+    // }
+    if(sex == 'C') {
+      openModal("성별을 선택해 주세요.");
+      return;
+    }
+    if(!address) {
+      openModal("주소 검색을 통해 주소를 입력해 주세요.");
+      return;
+    }
+
     const userData = {
-      loginId : loginId,
-      loginPw : loginPw,
-      name : name,
-      email : email,
-      sex : sex,
-      address : address,
+      loginId,
+      loginPw,
+      name,
+      email,
+      sex,
+      address,
     };
-    console.log(userData);
 
     try {
-      const response = await fetch('/api/usr/member/join',{
+      const response = await fetch('http://localhost:8081/api/usr/member/join',{
         method: 'POST',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify(userData)
-      }
-    );
+      });
+
       if(response.ok){
-        const result = await response.text();
-        alert('회원가입이 완료되었습니다. 서버 응답:' + result);
+        openModal("회원가입이 완료 되었습니다. 로그인 페이지로 이동합니다.");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1200);
       } else {
-        alert('회원가입 실패! 서버 상태 코드 :' + response.status)
+        openModal("회원가입 실패!");
       }
     } catch (error) {
       console.error('통신오류', error);
-        alert('서버와 통신할 수 없습니다.');
+      openModal("서버와 연결이 되지 않고 있습니다.");
     }
   };
-    const modalStyle = {
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '450px',
-        height: '500px',
-        border: '1px solid #ccc',
-        zIndex: 1000,
-        backgroundColor: 'white',
-        padding: '10px'
-    };
+
   return (
- <div>
-  {/* 최상위 컨테이너: 중앙 정렬 및 그림자 적용 */}
-  <div className="p-8 max-w-lg mx-auto bg-white shadow-xl rounded-2xl mt-10">
-    <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center border-b pb-3">
-      회원가입 페이지 📝
-    </h2>
-    
-    <table className="min-w-full divide-y divide-gray-200">
-      <tbody className="bg-white divide-y divide-gray-100">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
+      <div className="p-8 w-full max-w-md bg-white shadow-2xl rounded-xl">
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center border-b pb-3">
+          WorkLog Get Start
+        </h2>
         
-        {/* 아이디 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 w-1/4">아이디</td>
-          <td className="px-4 py-3">
-            <input
-              type="text"
-              placeholder="아이디를 입력하세요"
+        <Form
+          layout="vertical"
+          onFinish={handleSubmit}
+          requiredMark={false}
+          className="space-y-4"
+        >
+
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">아이디</span>}
+            name="loginId"
+            rules={[{ required: true, message: '아이디를 입력해주세요.'}]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="아이디"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
-        
-        {/* 비밀번호 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">비밀번호</td>
-          <td className="px-4 py-3">
-            <input
-              // 🚨 보안: type="password"로 변경하는 것을 권장합니다.
-              type="password" 
-              placeholder="비밀번호를 입력하세요"
+          </Form.Item>
+
+
+
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">비밀번호</span>}
+            name="loginPw"
+            // rules={[{ required: true, message: '비밀번호를 입력해주세요.'}]}
+          >
+            <Password
+              prefix={<LockOutlined className="site-form-item-icon" />}
+              placeholder="비밀번호"
               value={loginPw}
               onChange={(e) => setLoginPw(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
-        
-        {/* 비밀번호 확인 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">비밀번호 확인</td>
-          <td className="px-4 py-3">
-            <input
-              // 🚨 보안: type="password"로 변경하는 것을 권장합니다.
-              type="password" 
-              placeholder="비밀번호를 다시 입력하세요"
-              // value, onChange는 컴포넌트 로직에 맞게 추가해야 함
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+          </Form.Item>
+            
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">비밀번호 확인</span>}
+            name="loginPwChk"
+            dependencies={['loginPw']}
+            rules={[{ required: true, message: '비밀번호를 입력해주세요.'},
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if(!value || getFieldValue('loginPw') == value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('비밀번호가 일치하지 않습니다.'));
+                },
+              }),
+            ]}
+          >
+            <Password
+              prefix={<LockOutlined className="site-form-item-icon" />}
+              placeholder="비밀번호를 다시 입력하세요."
+              value={loginPwChk}
+              onChange={(e) => setLoginPwChk(e.target.value)}
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
-        
-        {/* 이름 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">이름</td>
-          <td className="px-4 py-3">
-            <input
-              type="text"
-              placeholder="이름을 입력하세요"
+          </Form.Item>
+
+
+
+
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">이름</span>}
+            name="name"
+            rules={[{ required: true, message: '이름를 입력해주세요.'}]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="이름"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
-        
-        {/* Email */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">Email</td>
-          <td className="px-4 py-3">
-            <input
-              type="text"
-              placeholder="Email을 입력하세요"
+          </Form.Item>
+
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">Email</span>}
+            name="email"
+            rules={[{ required: true, message: '이메일을 입력해주세요.'}]}
+          >
+            <Input
+              prefix={<MailOutlined className="site-form-item-icon" />}
+              placeholder="이메일"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
-        
-        {/* 성별 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">성별</td>
-          <td className="px-4 py-3">
-            <select
+          </Form.Item>
+
+          <Form.Item
+            // label={<span className="font-semibold text-gray-700">성별</span>}
+            name="sex"
+            rules={[{ required: true, message: '성별을 선택해주세요.'}]}
+            initialValue="C"
+          >
+            <Select
               value={sex}
-              onChange={(e) => setSex(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              onChange={(value) => setSex(value)}
+              className="rounded-lg h-10"
             >
-              <option value="C">성별 선택</option>
-              <option value="M">남성</option>
-              <option value="W">여성</option>
-            </select>
-          </td>
-        </tr>
-        
-        {/* 주소 */}
-        <tr className="hover:bg-gray-50">
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">주소</td>
-          <td className="px-4 py-3 flex flex-col space-y-2">
-            <button
-              type="button"
-              onClick={() => setIsPostcodeOpen(true)}
-              className="w-1/2 p-2 bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-600 transition duration-150 shadow-md"
-            >
-              우편번호 찾기
-            </button>
-            {/* 주소 input은 우편번호 버튼 옆이 아닌 아래로 배치하여 가독성 개선 */}
-            <input
-              type="text"
-              placeholder="주소를 입력하세요"
+              <Option value="C" disabled>성별 선택</Option>
+              <Option value="M">남성</Option>
+              <Option value="W">여성</Option>
+            </Select>  
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="font-semibold text-gray-700">주소</span>}
+            required
+            className="mb-4"
+          >
+            <div className="flex space-x-2 mb-2">
+              <Button
+                type="default"
+                onClick={() => setIsPostcodeOpen(true)}
+                className="w-1/2 p-2 bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-600 transition duration-150 shadow-md border-none !h-10"
+              >
+                <HomeOutlined /> 우편번호 찾기
+              </Button>
+            </div>
+            <Input
+              prefix={<HomeOutlined className="site-form-item-icon" />}
+              placeholder="주소는 우편번호 찾기로 입력됩니다."
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              // readOnly 클래스를 추가하여 우편번호 검색으로만 입력 가능하도록 유도하는 것도 좋음
-              className="w-full p-2 border border-gray-300 rounded-lg mt-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+              readOnly
+              className="rounded-lg h-10"
             />
-          </td>
-        </tr>
+          </Form.Item>  
 
-      </tbody>
-    </table>
-    
-    {/* 등록하기 버튼 (테이블 밖, 중앙 정렬) */}
-    <div className="mt-8 text-center">
-      <button
-        type="button"
-        onClick={handleSubmit}
-        className="w-full sm:w-1/2 p-3 bg-indigo-600 text-white text-lg font-bold rounded-lg hover:bg-indigo-700 transition duration-200 shadow-lg transform hover:scale-105"
-      >
-        등록하기
-      </button>
-    </div>
-
-  </div>
+          <Form.Item className="mt-8">
+            <Button
+              type="primary"
+              htmlType="submit"
+              className="w-full p-3 bg-indigo-600 text-white text-lg font-bold rounded-lg hover:bg-indigo-700 transition duration-200 shadow-lg transform hover:scale-105 !h-10"
+            >
+              회원가입
+            </Button>
+          </Form.Item>
+        </Form>
+        
+        <div className="text-center mt-4 text-gray-400">
+          <Link to="/login" className="text-sm hover:text-black transition duration-150">
+            이미 계정이 있으신가요?
+          </Link>
+        </div>
+      </div>
   
-  {/* 우편번호 모달 (기존 구조 유지) */}
-  {isPostcodeOpen && (
-    <div style={modalStyle} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-4 rounded-lg shadow-2xl relative">
-        <button 
-            onClick={() => setIsPostcodeOpen(false)}
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 text-xl font-bold"
-        >
-            &times; 닫기
-        </button>
+      <Modal
+        title={<span className="text-xl font-bold text-gray-900">우편번호 찾기</span>}
+        open={isPostcodeOpen}
+        onCancel={() => setIsPostcodeOpen(false)}
+        footer={null}
+        width={450}
+        className="!rounded-xl !shadow-2xl"
+        bodyStyle={{ padding: '0px' }}
+      >
         <DaumPostcodeEmbed
           onComplete={handleComplete}
           autoClose={false}
+          style={{ width: '100%', height: '400px' }}
         />
-      </div>
-    </div>  
-  )}
-</div>
-    )
-}
+      </Modal>
 
+      <Modal
+        title={<span className="text-xl font-bold text-gray-900">알림</span>}
+        open={isModalOpen}
+        onCancel={closeModal}
 
+        footer={[
+          <Button
+            key="confirm"
+            type="primary"
+            onClick={closeModal}
+            className="bg-indigo-600 hover:!bg-indigo-700 focus:ring-indigo-500"
+          >
+            확인
+          </Button>
+        ]}
+        className="!rounded-lg !shadow-2xl"
+      >
+        <p className="text-gray-700 mb-6">{modalMessage}</p>
+      </Modal>
+    </div>
+    );
+  }
 export default Join;

@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom'; // 페이지 이동을 위한 Link import
-
+import { Button, Input } from 'antd';
+import LogoutButton from './Logout'; //여기서 버튼 가져 올때 이름 바꾼 것!
+import { AuthContext } from '../context/AuthContext';
 
 // 디자인은 차후 수정 예정
 function Home() {
+
+  const {isLoginedId} = useContext(AuthContext)
   return (
     <div>
       <div className="flex justify-between items-center p-4">
@@ -12,14 +16,18 @@ function Home() {
         </div>
         <div className="container mx-auto p-5 flex justify-around navbar bg-base-100 shadow-lg">
           <Link to="/" className="btn btn-ghost text-xl">홈으로</Link>
-          <div>들어갈 것들</div>
-          <div>들어갈 것들</div>
-          <div>들어갈 것들</div>
-          <div>들어갈 것들</div>
-          <div>들어갈 것들</div>
+          <div>WorkLog란?</div>
+          <div>이용 방법</div>
+          <Link to="/write">직접 사용하기</Link>
+          <div>부가적인 기능들</div>
+          <div>고객센터</div>
         </div>
         <div>
-          <Link to="/login" className="pr-6 btn bg-white text-black border-[#e5e5e5]">로그인/회원가입</Link>
+          {isLoginedId ? (
+            <LogoutButton/>
+          ) : (
+            <Link to="/login" className="pr-6 btn bg-white text-black border-[#e5e5e5]">로그인/회원가입</Link>
+          )}
         </div>
       </div>
       <div>
