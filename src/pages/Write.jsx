@@ -48,9 +48,9 @@ function Write(){
         <input type="text" placeholder="제목 작성란" value={title} onChange={(e) => setTitle(e.target.value)}/>
       </div>
       <div className="flex justify-start space-x-4 border-b pb-4">
-        <div className="p-4">날짜</div>
+        <div className="p-4"><input type="date" /> </div>
         <div className="p-4">글꼴 선택창</div>
-        <div className="p-4">파일 업로드창</div>
+        <div className="p-4"><input type="file" className="border border-blue-500 rounded" /></div>
       </div>
       <div className="flex items-start space-x-4">
         <div className="w-20 pt-2 font-semibold">메인 작성란</div>

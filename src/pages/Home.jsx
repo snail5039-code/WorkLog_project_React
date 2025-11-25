@@ -5,24 +5,36 @@ import { Link } from 'react-router-dom'; // 페이지 이동을 위한 Link impo
 // 디자인은 차후 수정 예정
 function Home() {
   return (
-  // 💡 최상위 컨테이너: 화면 중앙에 배치, 패딩, 그림자 추가
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      
-      {/* 메인 화면 제목 */}
-      <div className="text-5xl font-extrabold text-indigo-700 mb-6 tracking-wide">
-        메인 화면 🏠
+    <div>
+      <div className="flex justify-between items-center p-4">
+        <div className="">
+          <div className="p-6">로고</div>
+        </div>
+        <div className="container mx-auto p-5 flex justify-around navbar bg-base-100 shadow-lg">
+          <Link to="/" className="btn btn-ghost text-xl">홈으로</Link>
+          <div>들어갈 것들</div>
+          <div>들어갈 것들</div>
+          <div>들어갈 것들</div>
+          <div>들어갈 것들</div>
+          <div>들어갈 것들</div>
+        </div>
+        <div>
+          <Link to="/login" className="pr-6 btn bg-white text-black border-[#e5e5e5]">로그인/회원가입</Link>
+        </div>
       </div>
-      
-      {/* 게시글 목록 링크 */}
-      <div className="mt-8">
-        <Link 
-          to="/list"
-          // 💡 링크 버튼 스타일: 파란색 배경, 흰색 텍스트, 패딩, 둥근 모서리, 호버 효과
-          className="px-6 py-3 bg-indigo-500 text-white font-semibold text-lg rounded-full shadow-lg hover:bg-indigo-600 transition duration-300 transform hover:scale-105"
-        >
-          게시글 목록 가기 &rarr;
-        </Link>
+      <div>
+        사진 <img className="w-full" src="https://picsum.photos/500/300.jpg" /> // 임시 이미지
       </div>
+      <div>
+        <div className="relative w-full max-w-5xl mx-auto h-[450px] pt-10 pb-20">
+          사진 <img className="w-[80%] h-[80%] object-cover absolute top-0 left-0 z-10 shadow-xl rounded-xl" src="https://picsum.photos/500/500.jpg" /> // 임시 이미지
+          사진 <img className="transform rotate-3 w-[60%] h-[60%] object-cover absolute bottom-0 right-0 z-20 shadow-2xl rounded-xl border-8 border-white" src="https://picsum.photos/500/300.jpg" /> // 임시 이미지
+        </div>
+        <div className="relative w-full max-w-5xl mx-auto h-[450px] pt-10 pb-20">
+        </div>
+      </div>
+
+      <div className="text-center mb-10">시작하러가기</div>
     </div>
   );
 }
