@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Form, Checkbox, Modal, Upload } from 'antd';
+import { Button, Input, Form, Checkbox, Modal, Upload, message } from 'antd';
 // 이거 있어야지 에디터 쓸 수 있음!
 import { Editor } from '@toast-ui/react-editor';
 // 토스트 UI 에디터 임포트임!
@@ -59,7 +59,7 @@ function Write(){
     }
       // 제이슨으로 못받아서 폼데이타에 넘겨서 각자 받는다
       formData.append ('title', values.title);
-      formData.append ('mainContent', values.mainContentMarkdown);
+      formData.append ('mainContent', mainContentMarkdown);
       formData.append ('sideContent', values.sideContent);
       
 
@@ -73,7 +73,8 @@ function Write(){
     try {
       const response = await fetch('http://localhost:8081/api/usr/work/workLog',{
         method: 'post',
-        body: formData
+        body: formData,
+        credentials: "include" 
       } 
     );
       if(response.ok){
