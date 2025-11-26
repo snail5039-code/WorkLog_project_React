@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
 import DaumPostcodeEmbed from 'react-daum-postcode';
-import { Button, Input, Form, Checkbox, Modal, message, Select } from 'antd';
+import { Button, Input, Form, Checkbox, Modal, message, Select, Space } from 'antd';
 import Password from 'antd/es/input/Password';
 import { UserOutlined, LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 
 
-// 디자인은 차후 수정 예정
+// 디자인은 차후 수정 예정?? 그래도 이정도면 이쁜데
 function Join() {
   const navigate = useNavigate();
+
+  const { Option } = Select; //확실하게 select안에 있는 옵션임을 알려주기 위해 안그럼 경고 뜸 ㅠ
 
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
@@ -23,6 +25,39 @@ function Join() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
+  const [isIdDupChek, setIsIdDupChek] = useState(false);
+  const [isIdChekMessage, setIsIdChekMessage] = useState('');
+
+  const handleIdDupChek = async () => {
+    if(!loginId) {
+      message.error("아이디를 입력해 주세요.");
+      setIsIdDupChek(false);
+      return;
+    }
+
+    // 서버로 보내니깐 서버는 get으로 받아야하고 리퀘스트파람으로 변수 받아서 쿼리 날리면 된다 ㅇㅋ?
+    try {
+      const response = await fetch(`http://localhost:8081/api/usr/member/checkLoginId?loginId=${loginId}`);
+      const data = await response.json();
+      // 굳이 컨트롤러에서 맴버로 안받아도 되서 인트 타입으로 0,1을 반환해서 그냥 넘겨줬음
+      if(response.ok) {
+        if(data === 0) {
+          setIsIdDupChek(true);
+          setIsIdChekMessage("사용 가능한 아이디 입니다.");
+          message.success("사용 가능한 아이디 입니다.");
+        } else {
+          setIsIdDupChek(false);
+          setIsIdChekMessage("이미 사용중인 아이디 입니다.");
+          message.error("이미 사용중인 아이디 입니다.");
+        } 
+      }
+    }catch (error) {
+      console.error('통신오류', error);
+      message.error("서버와 연결이 되지 않고 있습니다.");
+      setIsIdDupChek(false);
+    }
+  };
+
   const openModal = (message) => {
     setModalMessage(message);
     setIsModalOpen(true);
@@ -30,7 +65,7 @@ function Join() {
 
   const closeModal = () => {
     setModalMessage('');
-    setIsModalOpen(true);
+    setIsModalOpen(false);
   }
   
   const handleComplete = (data) => {
@@ -108,20 +143,39 @@ function Join() {
           onFinish={handleSubmit}
           requiredMark={false}
           className="space-y-4"
-        >
+         >
 
+          {/* // 자꾸 개발자도구 오류 떠서 결국 스페이스 컴펙트 안에 담고 메세지창을 엑스트라로 만들어서 해결... ㅜ */}
           <Form.Item
             // label={<span className="font-semibold text-gray-700">아이디</span>}
             name="loginId"
             rules={[{ required: true, message: '아이디를 입력해주세요.'}]}
+            extra={
+              isIdChekMessage && (
+                <div className={`mt-1 text-sm ${isIdDupChek ? 'text-green-600' : 'text-red-600'}`}>
+                  {isIdChekMessage}
+                </div>
+            )}
           >
+            
+          <Space.Compact style={{ width: '95%'}} className="gap-x-2">  
             <Input
               prefix={<UserOutlined className="site-form-item-icon" />}
               placeholder="아이디"
               value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
+              onChange={(e) => {setLoginId(e.target.value); setIsIdDupChek(false)}}
               className="rounded-lg h-10"
             />
+            <Button
+              type="default"
+              onClick={handleIdDupChek}
+              style={{ width: '110px' }}
+               className="h-10 border-l-0 rounded-r-lg bg-gray-100 hover:!bg-gray-200 "
+            >
+              중복확인
+            </Button>
+            </Space.Compact>
+            
           </Form.Item>
 
 
@@ -165,8 +219,6 @@ function Join() {
           </Form.Item>
 
 
-
-
           <Form.Item
             // label={<span className="font-semibold text-gray-700">이름</span>}
             name="name"
@@ -184,7 +236,12 @@ function Join() {
           <Form.Item
             // label={<span className="font-semibold text-gray-700">Email</span>}
             name="email"
-            rules={[{ required: true, message: '이메일을 입력해주세요.'}]}
+            rules={[{ required: true, message: '이메일을 입력해주세요.'}
+              ,{
+                type: "email",
+                message: "올바른 이메일 주소를 입력해주세요."
+              }
+            ]}
           >
             <Input
               prefix={<MailOutlined className="site-form-item-icon" />}
@@ -260,7 +317,7 @@ function Join() {
         footer={null}
         width={450}
         className="!rounded-xl !shadow-2xl"
-        bodyStyle={{ padding: '0px' }}
+        styles={{ body: {padding: '0px'} }}
       >
         <DaumPostcodeEmbed
           onComplete={handleComplete}

@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "@toast-ui/editor": "^3.2.2",
+    "@toast-ui/react-editor": "^3.2.3",
     "antd": "^6.0.0",
     "firebase": "^12.6.0",
     "react": "^19.2.0",

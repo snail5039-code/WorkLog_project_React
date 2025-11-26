@@ -1,73 +1,191 @@
-import {useEffect, useState} from 'react';
-import { Link } from 'react-router-dom';
+import {useEffect, useRef, useState} from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button, Input, Form, Checkbox, Modal, Upload } from 'antd';
+// 이거 있어야지 에디터 쓸 수 있음!
+import { Editor } from '@toast-ui/react-editor';
+// 토스트 UI 에디터 임포트임!
+import '@toast-ui/editor/dist/toastui-editor.css';
+import '@toast-ui/editor/dist/theme/toastui-editor-dark.css';
+
+// 커스텀 툴바 만드는 거라는 데 이건 솔직히 못만들겠다 아직은 ㅠ
 
 function Write(){
-  const [title, setTitle] = useState('');
-  const [mainContent, setMainContent] = useState('');
-  const [sideContent, setSideContent] = useState('');
+  
+  const navigate = useNavigate(); 
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  
+  const [form] = Form.useForm(); // 이 넘이 관리함!
 
-  const handleSubmit = async () => {
+  // const [title, setTitle] = useState(''); 제거함 안티 폼이 관리해서 굳이 필요 없음!!
+  // const [mainContent, setMainContent] = useState('');
+  // const [sideContent, setSideContent] = useState('');
 
-    const postData = {
-      title : title,
-      mainContent : mainContent,
-      sideContent : sideContent,
-    };
-    console.log("제목", postData.title);
-    console.log("메인작성내용", postData.mainContent);
-    console.log("비고작성내용", postData.sideContent);
+  //토스트 UI 불러오려고 만든 거임
+  const editorRef = useRef();
+  
+
+
+  const openModal = (message) => {
+    setModalMessage(message);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalMessage('');
+    setIsModalOpen(false);
+    navigate("/list");
+  };
+  // 모달 선언이라서 밖에 있어야 함
+
+  const handleSubmit = async (values) => { // 벨류는 폼 안에 있는 값들 자동적으로 가져올라고
+    //첨부파일 때문에 폼데이타로 넘기려고
+    const formData = new FormData();
+
+
+    let mainContentMarkdown = '';
+    if (editorRef.current) {
+        const instance = editorRef.current.getInstance();
+
+        if (instance) {
+            mainContentMarkdown = instance.getMarkdown();
+        }
+    }
+    
+    if (!mainContentMarkdown.trim()) {
+        message.error("메인 작성 내용을 입력해주세요.");
+        return; 
+    }
+      // 제이슨으로 못받아서 폼데이타에 넘겨서 각자 받는다
+      formData.append ('title', values.title);
+      formData.append ('mainContent', values.mainContentMarkdown);
+      formData.append ('sideContent', values.sideContent);
+      
+
+      //여기서 안에 파일 업로드한지 검증하고 있으면 파일 보내겠다는 소리임 originFileObj 이거는 upload 타입 안에 실제로 있는 변수 명임! fileObj 이건 그냥 만든거고! 여러갤 수 있으니
+      if(values.files && values.files.length > 0) {
+        values.files.forEach((fileObj) => {
+          formData.append("files", fileObj.originFileObj)
+        });
+      }
 
     try {
       const response = await fetch('http://localhost:8081/api/usr/work/workLog',{
         method: 'post',
-        headers: {'content-type': 'application/json'},
-        body: JSON.stringify(postData)
+        body: formData
       } 
     );
       if(response.ok){
-        const result = await response.text();
-        alert('등록이 완료되었습니다. 서버 응답: ' + result);
-        setTitle('');
-        setMainContent('');
-        setSideContent('');
+        setTimeout(() => {
+          openModal('등록이 완료되었습니다.');
+        }, 1500);
+    
       } else {
-        alert('등록 실패! 서버 상태 코드: ' + response.status);
+        openModal('등록을 실패했습니다.');
       }
     } catch (error) {
       console.error("통신 오류:", error);
-        alert('서버와 통신할 수 없습니다.');
+      openModal('통신 오류가 발생했습니다.');
     }
   };
 
   return (
     <div className="app-container max-w-2xl mx-auto p-6 space-y-4">
-      
-      <div className="text-xl font-bold p-2 border-b text-start">업무일지작성</div>
-      <div>
-        <div>제목</div>
-        <input type="text" placeholder="제목 작성란" value={title} onChange={(e) => setTitle(e.target.value)}/>
+      <div className="flex justify-between">
+        <div className="text-xl font-bold p-2 border-b text-start">WorkLog Write</div>
+        <Link to="/" className="pt-4">홈으로</Link>
       </div>
-      <div className="flex justify-start space-x-4 border-b pb-4">
-        <div className="p-4"><input type="date" /> </div>
-        <div className="p-4">글꼴 선택창</div>
-        <div className="p-4"><input type="file" className="border border-blue-500 rounded" /></div>
-      </div>
-      <div className="flex items-start space-x-4">
-        <div className="w-20 pt-2 font-semibold">메인 작성란</div>
-        <input className="border border-blue-500 rounded p-2 flex-grow" type="text" placeholder="여기에 작성하세요" value={mainContent} onChange={(e) => setMainContent(e.target.value)}/> 
-      </div>
-      
-      <div className="flex items-start space-x-4">
-        <div className="w-20 pt-2 font-semibold">비고</div>
-        <input className="border border-blue-500 rounded p-2 flex-grow" type="text" placeholder="여기에 작성하세요" value={sideContent} onChange={(e) => setSideContent(e.target.value)}/> 
-      </div>
-      
-      <div className="flex justify-end pt-4">
-        <button onClick={handleSubmit} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          등록하기
-        </button>
-      </div>
-      <Link to="/">홈으로</Link>
+      {/* 요렇게 해야 폼이 알아서 관리 해줌 위에 변수도 줬으니 폼으로 받아서 알아서 백으로 넘겨주는 거임!*/}
+      <Form
+        form={form}
+        layout="vertical"
+        className="space-y-4"
+        onFinish={handleSubmit}
+      >
+
+        <Form.Item
+          label={<span className="text-lg font-semibold text-gray-700">Title</span>}
+          name="title"
+          rules={[{ required: true, message: '제목을 입력해주세요'}]}
+          className="mb-0"
+        >
+          <Input
+            placeholder={'제목을 입력하세요.'}
+            className="w-full"  
+          />
+        </Form.Item>
+
+        {/* 이게 토스트 유아이 가져오는 거임! */}
+        <div className="mb-6">
+            <label className="ant-form-item-label">
+                <span className="ant-form-item-required text-lg font-semibold">MainContent</span>
+            </label>
+            <Editor
+                ref={editorRef} // Ref 연결해서 적용 하는 거
+                initialValue="내용을 입력하세요." // 안에 기본 내용 
+                previewStyle="vertical"
+                height="500px"
+                initialEditType="wysiwyg" // 위지윅 모드 설정?? 이건 잘 모르것음
+                use='default' // 기본 값 세팅
+            />
+        </div>
+        <div className="flex gap-4 items-center">
+          <Form.Item
+            label={<span className="text-lg font-semibold text-gray-700">비고</span>}
+            name="sideContent"
+            rules={[{ required: true, message: '내용을 입력해주세요'}]}
+            className="flex-1"
+          >
+            <Input
+              placeholder={'내용을 입력하세요.'}
+              className="w-full"  
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>}
+            name="files"
+            valuePropName="fileList" //이거 그냥 쉽게 이름 주는거임 안에 있는 파일들 리스트라는 거
+            getValueFromEvent={(e) => e.fileList} // 음 업로드 자체 내용 안에 파일리스트가 있어서 이벤트가 발생하면 파일리스트를 가져온다
+          > 
+            {/* 비포어는 업로드 전에 호출되는 함수로 아무것도 안올라와있으면 제출을 방지하는 함수임  멀티플은 여러개 선택한다는 것 */}
+            {/* 음 정확하게 이것때문에 파일리스트에만 저장 됬다가 버튼을 등록하기 버튼을 누르면 위에 올라가서 전송되는 것임! */}
+            <Upload beforeUpload={() => false} multiple> 
+              <Button className="py-1">파일 선택</Button>
+            </Upload>
+          </Form.Item>
+        </div>
+
+
+        <Form.Item className="mt-8">
+          <Button
+            type="primary" // 요게 버튼 스타일
+            htmlType="submit" // 자바에서 했던 것처럼 누르면 서브밋으로 제출
+            className="w-full bg-blue-500 hover:bg-blue-600" // 디자인 
+          >
+            등록하기
+          </Button>
+        </Form.Item>
+      </Form> 
+
+      <Modal
+        title="알림"
+        open={isModalOpen}
+        onCancel={closeModal}
+        footer={[
+          <Button 
+            key="confirm"
+            type="primary"
+            onClick={closeModal}
+            >
+              확인
+          </Button>
+        ]}
+      >
+        <p>{modalMessage}</p>
+      </Modal>
+
     </div>
   );
 }

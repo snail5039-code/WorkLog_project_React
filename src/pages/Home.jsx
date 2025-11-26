@@ -18,11 +18,13 @@ function Home() {
           <Link to="/" className="btn btn-ghost text-xl">홈으로</Link>
           <div>WorkLog란?</div>
           <div>이용 방법</div>
-          <Link to="/write">직접 사용하기</Link>
+          <Link to="/write" className="btn btn-ghost text-xl">직접 사용하기</Link>
           <div>부가적인 기능들</div>
           <div>고객센터</div>
         </div>
         <div>
+
+          {/* <Link to="/mypage">마이페이지</Link> */}
           {isLoginedId ? (
             <LogoutButton/>
           ) : (

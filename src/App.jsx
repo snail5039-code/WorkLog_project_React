@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
 import { AuthContext, AuthProvider } from './context/AuthContext';  // 마찬가지로 여기도 해줘야 함
+// 요거 두 개는 토스트 UI 임포트, 게시글 작성하려고 가져온 것!
+import '@toast-ui/editor/dist/toastui-editor.css'; 
+import '@toast-ui/editor/dist/theme/toastui-editor-dark.css';
 
 import Home from './pages/Home';
 import List from './pages/List';

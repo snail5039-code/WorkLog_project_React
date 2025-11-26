@@ -1,9 +1,23 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+
 @font-face {
     font-family: 'GowoonDodum';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/GowunDodum-Regular.woff') format('woff');
     font-weight: normal;
     font-display: swap;
+}
+
+/* 몰라서 걍 가져옴 */
+.toastui-editor-toolbar-icons[data-tooltip="오늘 날짜 삽입"] {
+    /* 기본 아이콘 이미지 숨기기 */
+    background-image: none !important; 
+    /* 텍스트 보이게 처리 */
+    text-indent: 0 !important; 
+    /* 텍스트 색상 및 패딩 설정 (선택 사항) */
+    color: #38a169; /* 진한 녹색 */
+    padding: 0 8px;
+    line-height: 28px;
+    font-weight: bold;
 }
