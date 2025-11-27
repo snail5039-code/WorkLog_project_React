@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState, useContext} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Form, Checkbox, Modal, Upload, message } from 'antd';
+import { Button, Input, Form, Checkbox, Modal, Upload, message, Spin } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 // 이거 있어야지 에디터 쓸 수 있음!
 import { Editor } from '@toast-ui/react-editor';
@@ -20,6 +20,8 @@ function Write(){
   const [modalMessage, setModalMessage] = useState('');
   
   const [form] = Form.useForm(); // 이 넘이 관리함!
+
+  const [isSubmitLoading, setIsSubmitLoading] = useState(false); // 얘가 요약할때 로딩 창임
 
   const {isLoginedId} = useContext(AuthContext);
 
@@ -61,9 +63,10 @@ function Write(){
   // 모달 선언이라서 밖에 있어야 함
 
   const handleSubmit = async (values) => { // 벨류는 폼 안에 있는 값들 자동적으로 가져올라고
+    setIsSubmitLoading(true); //로딩 활성화
+
     //첨부파일 때문에 폼데이타로 넘기려고
     const formData = new FormData();
-
 
     let mainContentMarkdown = '';
     if (editorRef.current) {
@@ -76,6 +79,7 @@ function Write(){
     
     if (!mainContentMarkdown.trim()) {
         message.error("메인 작성 내용을 입력해주세요.");
+        setIsSubmitLoading(false); // 검증 실패하면 로딩 없애기
         return; 
     }
       // 제이슨으로 못받아서 폼데이타에 넘겨서 각자 받는다
@@ -99,13 +103,16 @@ function Write(){
       } 
     );
       if(response.ok){
-          openModal('등록이 완료되었습니다.');
+          openModal('등록이 완료되었습니다. (AI 요약 포함!)');
       } else {
         openModal('등록을 실패했습니다.');
       }
     } catch (error) {
       console.error("통신 오류:", error);
       openModal('통신 오류가 발생했습니다.');
+    } finally {
+        // 💡 3. 성공 또는 실패에 관계없이 통신이 끝나면 로딩 해제
+        setIsSubmitLoading (false); 
     }
   };
 
@@ -121,6 +128,7 @@ function Write(){
         layout="vertical"
         className="space-y-4"
         onFinish={handleSubmit}
+        disabled={isSubmitLoading} // ai 요약 로딩 중에 있어야 이중 제출을 막음
       >
 
         <Form.Item
@@ -163,14 +171,14 @@ function Write(){
           </Form.Item>
 
           <Form.Item
-            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>}
+            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일 (양식 .txt)</span>} //현재는 우선 txt로만 해보자
             name="files"
             valuePropName="fileList" //이거 그냥 쉽게 이름 주는거임 안에 있는 파일들 리스트라는 거
             getValueFromEvent={(e) => e.fileList} // 음 업로드 자체 내용 안에 파일리스트가 있어서 이벤트가 발생하면 파일리스트를 가져온다
           > 
             {/* 비포어는 업로드 전에 호출되는 함수로 아무것도 안올라와있으면 제출을 방지하는 함수임  멀티플은 여러개 선택한다는 것 */}
             {/* 음 정확하게 이것때문에 파일리스트에만 저장 됬다가 버튼을 등록하기 버튼을 누르면 위에 올라가서 전송되는 것임! */}
-            <Upload beforeUpload={() => false} multiple> 
+             <Upload beforeUpload={() => false} multiple maxCount={5}> {/* 파일 갯수 제한 추가   */}
               <Button className="py-1">파일 선택</Button>
             </Upload>
           </Form.Item>
@@ -182,8 +190,16 @@ function Write(){
             type="primary" // 요게 버튼 스타일
             htmlType="submit" // 자바에서 했던 것처럼 누르면 서브밋으로 제출
             className="w-full bg-blue-500 hover:bg-blue-600" // 디자인 
+            disabled={isSubmitLoading} // 로딩 중일 때 버튼 비활성화 시킴
           >
-            등록하기
+           {isSubmitLoading ? (
+                <div className="flex items-center justify-center">
+                    <Spin size="small" className="mr-2" /> {/*spin 은 ant 디자인에서 로딩 시각적으로 보여주는 컴포넌트, 그래서 임포트 해야됨!*/}
+                    AI 요약 처리 중...
+                </div>
+            ) : (
+                '등록하기'
+            )}
           </Button>
         </Form.Item>
       </Form> 
