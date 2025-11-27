@@ -17,30 +17,23 @@ function Login() {
   const {isLoginedId, setIsLoginedId} = useContext(AuthContext);
 
   useEffect (() => {
-    if(isLoginedId) {
-      message.error({
-        content: "로그인은 로그아웃 후 이용 가능합니다.",
-        key: LOGIN_REQUIRED_KEY,
-          duration: 5,
-      });
-      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
-      navigate("/"); 
-    }
-  }, [navigate]);
+    setTimeout(() => {
+      if(isLoginedId > 0) {
+        message.error({
+          // content: "로그인은 로그아웃 후 이용 가능합니다.", 내일 해결하기로
+          key: LOGIN_REQUIRED_KEY,
+            duration: 5,
+        });
+        // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+        navigate("/"); 
+      }
+      
+    }, 0);
+  }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-
-  useEffect(() => {
-
-    const rememberdId = localStorage.getItem('rememberdId');
-    console.log(rememberdId);
-
-    if(rememberdId) {
-      form.setFieldsValue({
-        loginId: rememberdId,
-        remember: true,
-      });
-    }
-  }, [form]);
+  if(isLoginedId > 0) {
+    return isLoginedId;
+  }
 
   const openModal = (message) => {
     setModalMessage(message);
@@ -53,11 +46,6 @@ function Login() {
   };
   const onFinish = async (values) => {
 
-    if(values.remember) {
-      localStorage.setItem('rememberdId', values.loginId);
-    } else {
-      localStorage.removeItem('rememberdId');
-    }
     const loginData = {
       loginId : values.loginId,
       loginPw : values.loginPw,
@@ -72,10 +60,11 @@ function Login() {
       });
 
       if(response.ok) {
+        const data = await response.json();
         openModal(values.loginId + '님 환영합니다.');
         setTimeout(() => {
+          setIsLoginedId(data); 
           navigate("/");
-          setIsLoginedId(true); // 참 값을 담는다.
         }, 1200);
 
       } else {

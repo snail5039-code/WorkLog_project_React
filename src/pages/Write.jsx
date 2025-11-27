@@ -25,7 +25,7 @@ function Write(){
 
   // 요게 로그인 검증 하는 거임 세션에서 받아온 값으로!!!
   useEffect (() => {
-    if(!isLoginedId) {
+    if(isLoginedId == 0) {
       message.error({
         content: "글쓰기는 로그인 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
@@ -36,8 +36,8 @@ function Write(){
     }
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(!isLoginedId) {
-    return null;
+  if(isLoginedId == 0) {
+    return 0;
   }
   // const [title, setTitle] = useState(''); 제거함 안티 폼이 관리해서 굳이 필요 없음!!
   // const [mainContent, setMainContent] = useState('');

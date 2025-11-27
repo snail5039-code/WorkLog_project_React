@@ -11,8 +11,7 @@ function Logout() {
   const {isLoginedId, setIsLoginedId } = useContext(AuthContext);
 
   useEffect (() => {
-    console.log(isLoginedId);
-    if(!isLoginedId) {
+    if(isLoginedId == 0) {
       message.error({
         content: "로그아웃은 로그인 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
@@ -23,8 +22,8 @@ function Logout() {
     }
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(!isLoginedId) {
-    return null;
+  if(isLoginedId == 0) {
+    return 0;
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,9 +49,10 @@ function Logout() {
           });
           
           if(response.ok) {
+            const data = await response.json();
             openModal("로그아웃 되었습니다.");
             setTimeout(() => {
-              setIsLoginedId(false); // 거짓을 담는다.
+              setIsLoginedId(data); 
               navigate('/');
             }, 1500);
           } else {

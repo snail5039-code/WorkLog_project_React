@@ -11,7 +11,7 @@ function Detail() {
   const {isLoginedId} = useContext(AuthContext);
 
   useEffect (() => {
-    if(!isLoginedId) {
+    if(isLoginedId == 0) {
       message.error({
         content: "상세보기는 로그인 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
@@ -22,8 +22,8 @@ function Detail() {
     }
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(!isLoginedId) {
-    return null;
+  if(isLoginedId == 0) {
+    return 0;
   }
 
   const {id} = useParams();

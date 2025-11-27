@@ -25,11 +25,16 @@ function Home() {
         <div>
 
           {/* <Link to="/mypage">마이페이지</Link> */}
-          {isLoginedId ? (
-            <LogoutButton/>
-          ) : (
-            <Link to="/login" className="pr-6 btn bg-white text-black border-[#e5e5e5]">로그인/회원가입</Link>
-          )}
+          {isLoginedId !== 0 ? (
+            <LogoutButton />
+           ) : (
+             <Link
+                to="/login"
+               className="pr-6 btn bg-white text-black border-[#e5e5e5]"
+              >
+               로그인/회원가입
+              </Link>
+           )}
         </div>
       </div>
       <div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
 import DaumPostcodeEmbed from 'react-daum-postcode';
 import { Button, Input, Form, Checkbox, Modal, message, Select, Space } from 'antd';
@@ -27,6 +27,24 @@ function Join() {
 
   const [isIdDupChek, setIsIdDupChek] = useState(false);
   const [isIdChekMessage, setIsIdChekMessage] = useState('');
+
+  const {isLoginedId, setIsLoginedId} = useContext(AuthContext);
+    useEffect (() => {
+      if(isLoginedId > 0) {
+        message.error({
+          content: "회원가입은 로그아웃 후 이용 가능합니다.",
+          key: LOGIN_REQUIRED_KEY,
+            duration: 5,
+        });
+        // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+        navigate("/"); 
+      }
+    }, [isLoginedId, navigate]);
+    if(isLoginedId > 0) {
+      return isLoginedId;
+    }
+
+
 
   const handleIdDupChek = async () => {
     if(!loginId) {

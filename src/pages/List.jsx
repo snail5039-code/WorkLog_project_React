@@ -11,7 +11,7 @@ function List() {
   const {isLoginedId} = useContext(AuthContext);
 
   useEffect (() => {
-    if(!isLoginedId) {
+    if(isLoginedId == 0) {
       message.error({
         content: "목록 보기는 로그인 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
@@ -22,8 +22,8 @@ function List() {
     }
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(!isLoginedId) {
-    return null;
+  if(isLoginedId == 0) {
+    return 0;
   }
 
 
