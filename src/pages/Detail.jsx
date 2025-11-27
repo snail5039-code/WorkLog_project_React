@@ -1,10 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Button, Input, Form, Checkbox, Modal, Upload, message } from 'antd';
+import { AuthContext } from '../context/AuthContext';
 
-
-
+const LOGIN_REQUIRED_KEY = 'login_required_message';
 // 디자인은 차후 수정 예정
 function Detail() {
+
+  const navigate = useNavigate(); 
+  const {isLoginedId} = useContext(AuthContext);
+
+  useEffect (() => {
+    if(!isLoginedId) {
+      message.error({
+        content: "상세보기는 로그인 후 이용 가능합니다.",
+        key: LOGIN_REQUIRED_KEY,
+         duration: 5,
+      });
+      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+      navigate("/login"); 
+    }
+  }, [isLoginedId, navigate]);
+  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
+  if(!isLoginedId) {
+    return null;
+  }
+
   const {id} = useParams();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);

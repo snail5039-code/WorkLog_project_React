@@ -19,7 +19,6 @@ import MyPage from './pages/MyPage';
 
 function App(){
   return (
-    <AuthProvider>    
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -33,7 +32,6 @@ function App(){
           <Route path="/logout/" element={<Logout />} />
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
   );
 }
 export default App;

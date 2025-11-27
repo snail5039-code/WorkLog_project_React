@@ -21,3 +21,33 @@
     line-height: 28px;
     font-weight: bold;
 }
+a:link {
+  color: #1f2937; /* 원하는 기본 색상 (예: text-gray-800) */
+}
+
+/* 방문한 링크 색상 */
+a:visited {
+  /* :visited 링크 색상을 기본 링크 색상과 동일하게 설정하여 '씹히는' 것을 방지 */
+  color: #1f2937; /* List 컴포넌트에서 사용하는 text-gray-800 색상 값 */
+}
+
+/* 마우스 오버 시 색상 */
+a:hover {
+  color: #4f46e5; /* List 컴포넌트에서 사용하는 hover:text-indigo-600 색상 값 */
+}
+
+/* 액티브 상태 색상 */
+a:active {
+  color: #4f46e5;
+}
+
+@font-face {
+    font-family: 'BookkMyungjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Bd.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+body {
+    font-family: 'BookkMyungjo';
+}

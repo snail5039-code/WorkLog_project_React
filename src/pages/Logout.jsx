@@ -3,10 +3,29 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button, Input, Form, Checkbox, Modal, message } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 
+const LOGIN_REQUIRED_KEY = 'login_required_message';
+
 function Logout() {
   const navigate = useNavigate();
 
-  const { setIsLoginedId } = useContext(AuthContext);
+  const {isLoginedId, setIsLoginedId } = useContext(AuthContext);
+
+  useEffect (() => {
+    console.log(isLoginedId);
+    if(!isLoginedId) {
+      message.error({
+        content: "로그아웃은 로그인 후 이용 가능합니다.",
+        key: LOGIN_REQUIRED_KEY,
+          duration: 5,
+      });
+      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+      navigate("/login"); 
+    }
+  }, [isLoginedId, navigate]);
+  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
+  if(!isLoginedId) {
+    return null;
+  }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');

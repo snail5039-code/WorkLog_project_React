@@ -1,6 +1,7 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, useContext} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, Form, Checkbox, Modal, Upload, message } from 'antd';
+import { AuthContext } from '../context/AuthContext';
 // 이거 있어야지 에디터 쓸 수 있음!
 import { Editor } from '@toast-ui/react-editor';
 // 토스트 UI 에디터 임포트임!
@@ -8,6 +9,8 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 import '@toast-ui/editor/dist/theme/toastui-editor-dark.css';
 
 // 커스텀 툴바 만드는 거라는 데 이건 솔직히 못만들겠다 아직은 ㅠ
+const LOGIN_REQUIRED_KEY = 'login_required_message';
+// 로그인 후 이용가능 메세지 두번 출력하지 않기 위해 만든 변수
 
 function Write(){
   
@@ -18,6 +21,24 @@ function Write(){
   
   const [form] = Form.useForm(); // 이 넘이 관리함!
 
+  const {isLoginedId} = useContext(AuthContext);
+
+  // 요게 로그인 검증 하는 거임 세션에서 받아온 값으로!!!
+  useEffect (() => {
+    if(!isLoginedId) {
+      message.error({
+        content: "글쓰기는 로그인 후 이용 가능합니다.",
+        key: LOGIN_REQUIRED_KEY,
+         duration: 5,
+      });
+      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+      navigate("/login"); 
+    }
+  }, [isLoginedId, navigate]);
+  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
+  if(!isLoginedId) {
+    return null;
+  }
   // const [title, setTitle] = useState(''); 제거함 안티 폼이 관리해서 굳이 필요 없음!!
   // const [mainContent, setMainContent] = useState('');
   // const [sideContent, setSideContent] = useState('');
@@ -78,10 +99,7 @@ function Write(){
       } 
     );
       if(response.ok){
-        setTimeout(() => {
           openModal('등록이 완료되었습니다.');
-        }, 1500);
-    
       } else {
         openModal('등록을 실패했습니다.');
       }

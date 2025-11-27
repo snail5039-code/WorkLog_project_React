@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
-import { Button, Input, Form, Checkbox, Modal } from 'antd';
+import { Button, Input, Form, Checkbox, Modal, message } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 
+const LOGIN_REQUIRED_KEY = 'login_required_message';
 
 function Login() {
   const [form] = Form.useForm();
@@ -10,12 +11,28 @@ function Login() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
+
   const navigate = useNavigate(); 
 
-  const {setIsLoginedId} = useContext(AuthContext);
+  const {isLoginedId, setIsLoginedId} = useContext(AuthContext);
+
+  useEffect (() => {
+    if(isLoginedId) {
+      message.error({
+        content: "로그인은 로그아웃 후 이용 가능합니다.",
+        key: LOGIN_REQUIRED_KEY,
+          duration: 5,
+      });
+      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
+      navigate("/"); 
+    }
+  }, [navigate]);
+  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
+
   useEffect(() => {
 
     const rememberdId = localStorage.getItem('rememberdId');
+    console.log(rememberdId);
 
     if(rememberdId) {
       form.setFieldsValue({
@@ -55,11 +72,12 @@ function Login() {
       });
 
       if(response.ok) {
-        setIsLoginedId(true); // 참 값을 담는다.
         openModal(values.loginId + '님 환영합니다.');
         setTimeout(() => {
           navigate("/");
+          setIsLoginedId(true); // 참 값을 담는다.
         }, 1200);
+
       } else {
         const errorMessage = await response.text();
         console.error('로그인 실패:', response.status, errorMessage);
