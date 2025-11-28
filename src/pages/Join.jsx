@@ -1,11 +1,12 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
 import DaumPostcodeEmbed from 'react-daum-postcode';
 import { Button, Input, Form, Checkbox, Modal, message, Select, Space } from 'antd';
 import Password from 'antd/es/input/Password';
 import { UserOutlined, LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
+import { AuthContext } from '../context/AuthContext';
 
-
+const LOGIN_REQUIRED_KEY = 'login_required_message';
 // 디자인은 차후 수정 예정?? 그래도 이정도면 이쁜데
 function Join() {
   const navigate = useNavigate();

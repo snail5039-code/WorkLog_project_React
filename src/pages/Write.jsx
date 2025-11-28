@@ -171,7 +171,7 @@ function Write(){
           </Form.Item>
 
           <Form.Item
-            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일 (양식 .txt)</span>} //현재는 우선 txt로만 해보자
+            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>} //현재는 우선 txt로만 해보자
             name="files"
             valuePropName="fileList" //이거 그냥 쉽게 이름 주는거임 안에 있는 파일들 리스트라는 거
             getValueFromEvent={(e) => e.fileList} // 음 업로드 자체 내용 안에 파일리스트가 있어서 이벤트가 발생하면 파일리스트를 가져온다
