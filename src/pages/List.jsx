@@ -23,7 +23,7 @@ function List() {
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
   if(isLoginedId == 0) {
-    return 0;
+    return null;
   }
 
 

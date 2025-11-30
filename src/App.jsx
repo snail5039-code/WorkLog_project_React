@@ -20,17 +20,19 @@ import MyPage from './pages/MyPage';
 function App(){
   return (
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/list" element={<List />} />
-          <Route path="/write" element={<Write />} />
-          <Route path="/detail/:id" element={<Detail />} />
-          <Route path="/join/" element={<Join />} />
-          <Route path="/mypage/" element={<MyPage />} />
-          <Route path="/modify/:id" element={<Modify />} />
-          <Route path="/login/" element={<Login />} />
-          <Route path="/logout/" element={<Logout />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/list" element={<List />} />
+            <Route path="/write" element={<Write />} />
+            <Route path="/detail/:id" element={<Detail />} />
+            <Route path="/join/" element={<Join />} />
+            <Route path="/mypage/" element={<MyPage />} />
+            <Route path="/modify/:id" element={<Modify />} />
+            <Route path="/login/" element={<Login />} />
+            <Route path="/logout/" element={<Logout />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
   );
 }

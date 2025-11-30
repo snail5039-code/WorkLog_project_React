@@ -39,7 +39,7 @@ function Write(){
   }, [isLoginedId, navigate]);
   // 매끄럽게 화면 이동 없으면 깜박인다고 함 
   if(isLoginedId == 0) {
-    return 0;
+    return null;
   }
   // const [title, setTitle] = useState(''); 제거함 안티 폼이 관리해서 굳이 필요 없음!!
   // const [mainContent, setMainContent] = useState('');
