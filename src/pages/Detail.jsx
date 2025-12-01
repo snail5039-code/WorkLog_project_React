@@ -17,6 +17,65 @@ const BORDER_COLOR = '#303030'; // 구분선 및 테두리 색상
 const PRIMARY_TEXT = '#f0f0f0'; // 기본 텍스트 색상
 const SECONDARY_TEXT = '#a0a0a0'; // 보조 텍스트 색상
 const ACCENT_COLOR = '#4a90e2'; // 버튼 및 링크 강조 색상
+// 백엔드에서 제이슨으로 가져온는 것임, 그리고 파일있나 혹시 조건문으로 함 
+const SummaryTable = ({summaryJson, primaryText, secondaryText, borderColor}) => {
+  if(!summaryJson || !summaryJson.업무_리스트 || summaryJson.업무_리스트.length === 0) {
+    return <Text style={{ color: secondaryText }}>요약된 업무 내역이 없습니다.</Text>;
+  }
+
+  const data = summaryJson.업무_리스트;
+  const headers = Object.keys(data[0]); // 쉽게 첫번째 것들 다 가져옴 음... 안에 있던 제목들?
+  // 테이블 스타일
+  const tableStyle = { 
+        width: '100%', 
+        borderCollapse: 'collapse', 
+        color: primaryText,
+        fontSize: '15px' 
+    };
+    const cellStyle = { 
+        border: `1px solid ${borderColor}`, 
+        padding: '12px 15px', 
+        textAlign: 'left',
+    };
+    const headerStyle = {
+        ...cellStyle,
+        backgroundColor: '#303030', // 헤더 배경색
+        color: PRIMARY_TEXT,
+        fontWeight: '600'
+    };
+    const bodyRowStyle = {
+        backgroundColor: 'transparent'
+    };
+    // 표 만드는 건데 위에는 그냥 제목 추출해서 하는거고 밑에꺼는 돌면서 헤더랑 제목 일치하거나 그러면 추출해서 보여주는 것임
+  return (
+        <table style={tableStyle}>
+            {/* 1. 표 헤더 (<th>) */}
+            <thead>
+                <tr>
+                    {headers.map(header => (
+                        <th key={header} style={headerStyle}>
+                            {header}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            {/* 2. 표 본문 (<tr>, <td>) */}
+            <tbody>
+              {/* row 하나의 업무 요약 데이터임, index는 현재 행 순서 번호 */}
+                {data.map((row, rowIndex) => (
+                    <tr key={rowIndex} style={bodyRowStyle}>
+                        {headers.map(header => (
+                            <td key={`${rowIndex}-${header}`} style={cellStyle}>
+                                {/* 데이터가 없으면 '-' 표시 */}
+                                {row[header] || <Text type="secondary" style={{ color: secondaryText }}>-</Text>}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );    
+}
 
 // 디자인은 차후 수정 예정
 function Detail() {
@@ -28,6 +87,8 @@ function Detail() {
   const [workLog, setWorkLog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fileAttaches, setFileAttaches] = useState([]); // 파일들임
+
+  const [summaryJsonData, setSummaryJsonData] = useState(null);
 
   useEffect(() => {
     if (isLoginedId === 0) {
@@ -58,8 +119,19 @@ function Detail() {
         setWorkLog(fetchedData);
         // 파일 넘겨주려고 받는 거임! 백엔드 참고!
         setFileAttaches(fetchedData.fileAttaches || [])
+        if(fetchedData.summaryContent) {
+          try {
+              // 백엔드에서 받은 JSON 문자열을 JS 객체로 변환합니다. 쉽게 요약 내용이 있으면 컴터가 알아먹어야하니 제이슨에서 객체로 바꾸는 거임
+              const parsedJson = JSON.parse(fetchedData.summaryContent);
+              setSummaryJsonData(parsedJson);
+          } catch (error) {
+              console.error("SummaryContent JSON 파싱 실패:", error);
+              setSummaryJsonData(null); // 파싱 실패 시 초기화
+          }
+        }else {
+            setSummaryJsonData(null);
+        }
         setLoading(false);
-
       })
       .catch(error => {
         console.error("데이터 불러오기 실패:", error);
@@ -207,7 +279,7 @@ function Detail() {
           </div>
 
           {/* 요약 내용 (조건부 렌더링) */}
-          {workLog.summaryContent && (
+          {summaryJsonData && (
             <>
               <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>요약 내용</Divider>
               <Card
@@ -216,9 +288,12 @@ function Detail() {
                 style={{ backgroundColor: '#262626', borderColor: '#434343' }} 
                 styles={{ header: { borderBottom: `1px solid #434343` } }}
               >
-                <div style={{ whiteSpace: 'pre-wrap', color: PRIMARY_TEXT, lineHeight: 1.8 }}>
-                  {workLog.summaryContent}
-                </div>
+              <SummaryTable 
+                summaryJson={summaryJsonData} 
+                primaryText={PRIMARY_TEXT}
+                secondaryText={SECONDARY_TEXT}
+                borderColor={BORDER_COLOR}
+            />
               </Card>
             </>
           )}
