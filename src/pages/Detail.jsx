@@ -89,6 +89,22 @@ function Detail() {
   const [fileAttaches, setFileAttaches] = useState([]); // 파일들임
 
   const [summaryJsonData, setSummaryJsonData] = useState(null);
+  const [summaryContentMarkdown, setSummaryContentMarkdown] = useState(null);
+  
+  const extractPureJson = (text) => {
+    if (!text) return null;
+    
+    // JSON 시작 문자 ({ 또는 [)의 인덱스를 찾습니다.
+    const startIndex = text.search(/[\{\[]/);
+    
+    if (startIndex === -1) {
+        console.warn("JSON 시작 문자({ 또는 [)를 찾을 수 없습니다.");
+        return text.trim(); // 찾지 못했으면 공백만 제거 후 반환
+    }
+    
+    // 시작 인덱스부터 끝까지 잘라냅니다.
+    return text.substring(startIndex).trim();
+  };
 
   useEffect(() => {
     if (isLoginedId === 0) {
@@ -120,14 +136,23 @@ function Detail() {
         // 파일 넘겨주려고 받는 거임! 백엔드 참고!
         setFileAttaches(fetchedData.fileAttaches || [])
         if(fetchedData.summaryContent) {
+            setSummaryContentMarkdown(fetchedData.summaryContent);
           try {
-              // 백엔드에서 받은 JSON 문자열을 JS 객체로 변환합니다. 쉽게 요약 내용이 있으면 컴터가 알아먹어야하니 제이슨에서 객체로 바꾸는 거임
-              const parsedJson = JSON.parse(fetchedData.summaryContent);
-              setSummaryJsonData(parsedJson);
-          } catch (error) {
-              console.error("SummaryContent JSON 파싱 실패:", error);
-              setSummaryJsonData(null); // 파싱 실패 시 초기화
-          }
+              // ⭐️ [수정] 순수한 JSON만 추출하는 함수를 먼저 호출
+              const pureJsonString = extractPureJson(fetchedData.summaryContent);
+              
+              if (pureJsonString) {
+                  const parsedJson = JSON.parse(pureJsonString);
+                  setSummaryJsonData(parsedJson);
+              } else {
+                  throw new Error("JSON 추출 실패");
+              }
+              
+          } catch (error) {
+              // 이제 이 에러는 순수한 JSON 추출 로직도 실패했거나, 추출된 JSON이 문법 오류일 때 발생합니다.
+              console.error("SummaryContent JSON 파싱 최종 실패:", error);
+              setSummaryJsonData(null); // 파싱 실패 시 초기화
+          }
         }else {
             setSummaryJsonData(null);
         }
@@ -282,6 +307,11 @@ function Detail() {
           {summaryJsonData && (
             <>
               <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>요약 내용</Divider>
+              {/* ⭐️ Markdown 내용을 원본 텍스트로 임시 출력합니다. */}
+              <pre style={{ whiteSpace: 'pre-wrap', color: PRIMARY_TEXT, backgroundColor: '#262626', padding: '15px', borderRadius: '8px', border: `1px solid ${BORDER_COLOR}` }}>
+                {summaryContentMarkdown}
+              </pre>
+              
               <Card
                 title={<span style={{ color: PRIMARY_TEXT, fontWeight: 500 }}>분석 결과</span>}
                 variant="outlined"
