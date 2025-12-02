@@ -1,14 +1,9 @@
-import {useEffect, useRef, useState, useContext} from 'react';
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Form, Checkbox, Modal, Upload, message, Spin } from 'antd';
-import { AuthContext } from '../context/AuthContext';
-// 이거 있어야지 에디터 쓸 수 있음!
-import { Editor } from '@toast-ui/react-editor';
-// 토스트 UI 에디터 임포트임!
-import '@toast-ui/editor/dist/toastui-editor.css';
-import '@toast-ui/editor/dist/theme/toastui-editor-dark.css';
+import { Button, Input, Form, Modal, Upload, message, Spin } from 'antd';
+import { AuthContext } from '../context/AuthContext'; 
+// AuthContext가 존재한다고 가정하고 Context를 사용합니다.
 
-// 커스텀 툴바 만드는 거라는 데 이건 솔직히 못만들겠다 아직은 ㅠ
 const LOGIN_REQUIRED_KEY = 'login_required_message';
 // 로그인 후 이용가능 메세지 두번 출력하지 않기 위해 만든 변수
 
@@ -23,33 +18,31 @@ function Write(){
 
   const [isSubmitLoading, setIsSubmitLoading] = useState(false); // 얘가 요약할때 로딩 창임
 
-  const {isLoginedId} = useContext(AuthContext);
+  // Context에서 로그인 ID를 가져옵니다.
+  // AuthContext가 존재하지 않을 경우를 대비하여 기본값을 설정합니다. (다만 이 환경에서는 존재한다고 가정합니다)
+  const {isLoginedId} = useContext(AuthContext); 
+
+  // 메인 콘텐츠 TextArea에 접근하기 위한 Ref
+  const mainContentRef = useRef(null); 
 
   // 요게 로그인 검증 하는 거임 세션에서 받아온 값으로!!!
   useEffect (() => {
-    if(isLoginedId == 0) {
+    // isLoginedId가 0일 때만 로그인 검증 로직을 수행합니다.
+    // 타입 비교를 위해 === 대신 ==을 사용하던 부분을 ===으로 수정합니다.
+    if(isLoginedId === 0) { 
       message.error({
         content: "글쓰기는 로그인 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
-         duration: 5,
+          duration: 5,
       });
-      // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
       navigate("/login"); 
     }
   }, [isLoginedId, navigate]);
-  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(isLoginedId == 0) {
+
+  if(isLoginedId === 0) { // 타입 비교를 위해 == 대신 ===으로 수정합니다.
     return null;
   }
-  // const [title, setTitle] = useState(''); 제거함 안티 폼이 관리해서 굳이 필요 없음!!
-  // const [mainContent, setMainContent] = useState('');
-  // const [sideContent, setSideContent] = useState('');
-
-  //토스트 UI 불러오려고 만든 거임
-  const editorRef = useRef();
   
-
-
   const openModal = (message) => {
     setModalMessage(message);
     setIsModalOpen(true);
@@ -60,35 +53,25 @@ function Write(){
     setIsModalOpen(false);
     navigate("/list");
   };
-  // 모달 선언이라서 밖에 있어야 함
 
-  const handleSubmit = async (values) => { // 벨류는 폼 안에 있는 값들 자동적으로 가져올라고
-    setIsSubmitLoading(true); //로딩 활성화
+  const handleSubmit = async (values) => { 
+    setIsSubmitLoading(true); 
 
-    //첨부파일 때문에 폼데이타로 넘기려고
+    // 첨부파일을 포함하기 위해 FormData 사용
     const formData = new FormData();
 
-    let mainContentMarkdown = '';
-    if (editorRef.current) {
-        const instance = editorRef.current.getInstance();
-
-        if (instance) {
-            mainContentMarkdown = instance.getMarkdown();
-        }
-    }
+    const mainContentMarkdown = values.mainContent;
     
-    if (!mainContentMarkdown.trim()) {
+    if (!mainContentMarkdown || !mainContentMarkdown.trim()) {
         message.error("메인 작성 내용을 입력해주세요.");
-        setIsSubmitLoading(false); // 검증 실패하면 로딩 없애기
+        setIsSubmitLoading(false); 
         return; 
     }
-      // 제이슨으로 못받아서 폼데이타에 넘겨서 각자 받는다
+      
       formData.append ('title', values.title);
       formData.append ('mainContent', mainContentMarkdown);
       formData.append ('sideContent', values.sideContent);
       
-
-      //여기서 안에 파일 업로드한지 검증하고 있으면 파일 보내겠다는 소리임 originFileObj 이거는 upload 타입 안에 실제로 있는 변수 명임! fileObj 이건 그냥 만든거고! 여러갤 수 있으니
       if(values.files && values.files.length > 0) {
         values.files.forEach((fileObj) => {
           formData.append("files", fileObj.originFileObj)
@@ -105,13 +88,14 @@ function Write(){
       if(response.ok){
           openModal('등록이 완료되었습니다. (AI 요약 포함!)');
       } else {
-        openModal('등록을 실패했습니다.');
+        // 서버 응답 상태는 OK가 아니지만, 응답을 받은 경우 (4xx, 5xx)
+        openModal(`등록을 실패했습니다. (HTTP Code: ${response.status})`);
       }
     } catch (error) {
       console.error("통신 오류:", error);
-      openModal('통신 오류가 발생했습니다.');
+      // fetch 자체가 실패한 경우 (네트워크 오류, CORS 문제 등)
+      openModal('통신 오류가 발생했습니다. 백엔드 서버 상태를 확인해주세요.');
     } finally {
-        // 💡 3. 성공 또는 실패에 관계없이 통신이 끝나면 로딩 해제
         setIsSubmitLoading (false); 
     }
   };
@@ -122,13 +106,12 @@ function Write(){
         <div className="text-xl font-bold p-2 border-b text-start">WorkLog Write</div>
         <Link to="/" className="pt-4">홈으로</Link>
       </div>
-      {/* 요렇게 해야 폼이 알아서 관리 해줌 위에 변수도 줬으니 폼으로 받아서 알아서 백으로 넘겨주는 거임!*/}
       <Form
         form={form}
         layout="vertical"
         className="space-y-4"
         onFinish={handleSubmit}
-        disabled={isSubmitLoading} // ai 요약 로딩 중에 있어야 이중 제출을 막음
+        disabled={isSubmitLoading} 
       >
 
         <Form.Item
@@ -143,20 +126,23 @@ function Write(){
           />
         </Form.Item>
 
-        {/* 이게 토스트 유아이 가져오는 거임! */}
-        <div className="mb-6">
-            <label className="ant-form-item-label">
-                <span className="ant-form-item-required text-lg font-semibold">MainContent</span>
-            </label>
-            <Editor
-                ref={editorRef} // Ref 연결해서 적용 하는 거
-                initialValue="내용을 입력하세요." // 안에 기본 내용 
-                previewStyle="vertical"
-                height="500px"
-                initialEditType="wysiwyg" // 위지윅 모드 설정?? 이건 잘 모르것음
-                use='default' // 기본 값 세팅
-            />
-        </div>
+        {/* MainContent 입력 영역: 레이블을 Form.Item 밖으로 분리 */}
+        <div className="text-lg font-semibold text-gray-700 mb-2">MainContent</div>
+        <Form.Item
+          name="mainContent"
+          rules={[{ required: true, message: '메인 작성 내용을 입력해주세요.'}]}
+          // 배경색, 테두리, 그림자 추가하여 Toast UI와 유사한 시각적 효과 부여
+          className="bg-gray-50 border border-gray-200 rounded-lg shadow-md transition duration-200"
+        >
+          <Input.TextArea
+            ref={mainContentRef} // ref 연결
+            rows={15} // 충분히 큰 높이
+            placeholder="오늘의 작업 내용, 발생한 이슈 및 해결 과정 등을 입력하세요."
+            // Input.TextArea 자체의 테두리와 포커스 스타일을 제거하고 배경을 투명하게 설정하여 컨테이너 스타일과 통합
+            className="border-none focus:ring-0 focus:border-0 bg-transparent text-base p-2"
+          />
+        </Form.Item>
+
         <div className="flex gap-4 items-center">
           <Form.Item
             label={<span className="text-lg font-semibold text-gray-700">비고</span>}
@@ -171,14 +157,12 @@ function Write(){
           </Form.Item>
 
           <Form.Item
-            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>} //현재는 우선 txt로만 해보자
+            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>}
             name="files"
-            valuePropName="fileList" //이거 그냥 쉽게 이름 주는거임 안에 있는 파일들 리스트라는 거
-            getValueFromEvent={(e) => e.fileList} // 음 업로드 자체 내용 안에 파일리스트가 있어서 이벤트가 발생하면 파일리스트를 가져온다
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList} 
           > 
-            {/* 비포어는 업로드 전에 호출되는 함수로 아무것도 안올라와있으면 제출을 방지하는 함수임  멀티플은 여러개 선택한다는 것 */}
-            {/* 음 정확하게 이것때문에 파일리스트에만 저장 됬다가 버튼을 등록하기 버튼을 누르면 위에 올라가서 전송되는 것임! */}
-             <Upload beforeUpload={() => false} multiple maxCount={5}> {/* 파일 갯수 제한 추가   */}
+              <Upload beforeUpload={() => false} multiple maxCount={5}> 
               <Button className="py-1">파일 선택</Button>
             </Upload>
           </Form.Item>
@@ -187,14 +171,14 @@ function Write(){
 
         <Form.Item className="mt-8">
           <Button
-            type="primary" // 요게 버튼 스타일
-            htmlType="submit" // 자바에서 했던 것처럼 누르면 서브밋으로 제출
-            className="w-full bg-blue-500 hover:bg-blue-600" // 디자인 
-            disabled={isSubmitLoading} // 로딩 중일 때 버튼 비활성화 시킴
+            type="primary" 
+            htmlType="submit" 
+            className="w-full bg-blue-500 hover:bg-blue-600" 
+            disabled={isSubmitLoading} 
           >
-           {isSubmitLoading ? (
+            {isSubmitLoading ? (
                 <div className="flex items-center justify-center">
-                    <Spin size="small" className="mr-2" /> {/*spin 은 ant 디자인에서 로딩 시각적으로 보여주는 컴포넌트, 그래서 임포트 해야됨!*/}
+                    <Spin size="small" className="mr-2" /> 
                     AI 요약 처리 중...
                 </div>
             ) : (
