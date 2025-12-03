@@ -20,6 +20,7 @@ const ACCENT_COLOR = '#4a90e2'; // 버튼 및 링크 강조 색상
 
 
 // ⭐️ [추가] NestedTable 컴포넌트: 배열 형태의 데이터를 HTML 테이블로 렌더링하는 보조 컴포넌트
+// 여기는 서머리 테이블에서 배열인 것들을 가져와서 하나씩 출력하는 건데 그거는 제목, 날짜 이런것들임 !
 const NestedTable = ({data, primaryText, secondaryText, borderColor}) => {
     if (!data || data.length === 0) return null;
     
@@ -80,6 +81,7 @@ const NestedTable = ({data, primaryText, secondaryText, borderColor}) => {
 
 // ✨ [수정] SummaryTable 컴포넌트: JSON 객체 내의 모든 키-값 쌍을 리스트 형태로 유연하게 출력합니다.
 // 배열(테이블)을 발견하면 NestedTable을 호출하여 중첩 렌더링하고, 단일 값은 리스트 아이템으로 출력합니다.
+// 배열빼고 순회하면서 출력하는 거임! 근데 밑에 출력할 때는 안티 디자인 리스트 효과 때문에 자동적으로 데이터가 많으면 줄이 생김!
 const SummaryTable = ({summaryJson, primaryText, secondaryText, borderColor}) => {
     
     if (!summaryJson || Object.keys(summaryJson).length === 0) {
