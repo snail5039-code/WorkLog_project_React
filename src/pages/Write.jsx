@@ -111,7 +111,7 @@ function Write(){
       console.error("통신 오류:", error);
       openModal('통신 오류가 발생했습니다.');
     } finally {
-        // 💡 3. 성공 또는 실패에 관계없이 통신이 끝나면 로딩 해제
+        // 💡 3. 성공 또는 실패에 관계없이 통신이 끝나면 로딩 해제 
         setIsSubmitLoading (false); 
     }
   };
