@@ -18,137 +18,140 @@ const PRIMARY_TEXT = '#f0f0f0'; // 기본 텍스트 색상
 const SECONDARY_TEXT = '#a0a0a0'; // 보조 텍스트 색상
 const ACCENT_COLOR = '#4a90e2'; // 버튼 및 링크 강조 색상
 
-// ✨ 수정된 SummaryTable 컴포넌트: 배열(테이블)을 찾지 못하면 객체의 Key-Value 쌍을 리스트로 출력
+
+// ⭐️ [추가] NestedTable 컴포넌트: 배열 형태의 데이터를 HTML 테이블로 렌더링하는 보조 컴포넌트
+const NestedTable = ({data, primaryText, secondaryText, borderColor}) => {
+    if (!data || data.length === 0) return null;
+    
+    // 테이블 헤더 추출
+    const headers = Object.keys(data[0]); 
+    
+    // 테이블 스타일 정의
+    const tableStyle = { 
+        width: '100%', 
+        borderCollapse: 'collapse', 
+        color: primaryText,
+        fontSize: '14px' // 중첩된 테이블이므로 약간 작게
+    };
+    const cellStyle = { 
+        border: `1px solid ${borderColor}`, 
+        padding: '10px 12px', 
+        textAlign: 'left',
+    };
+    const headerStyle = {
+        ...cellStyle,
+        backgroundColor: '#383838', // 헤더 배경색
+        color: PRIMARY_TEXT,
+        fontWeight: '600'
+    };
+    const bodyRowStyle = {
+        backgroundColor: 'transparent'
+    };
+
+    return (
+        <table style={tableStyle}>
+            {/* 표 헤더 */}
+            <thead>
+                <tr>
+                    {headers.map(header => (
+                        <th key={header} style={headerStyle}>
+                            {header}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            {/* 표 본문 */}
+            <tbody>
+                {data.map((row, rowIndex) => (
+                    <tr key={rowIndex} style={bodyRowStyle}>
+                        {headers.map(header => (
+                            <td key={`${rowIndex}-${header}`} style={cellStyle}>
+                                {/* 데이터가 없으면 '-' 표시 */}
+                                {row[header] || <Text type="secondary" style={{ color: secondaryText }}>-</Text>}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+}
+
+
+// ✨ [수정] SummaryTable 컴포넌트: JSON 객체 내의 모든 키-값 쌍을 리스트 형태로 유연하게 출력합니다.
+// 배열(테이블)을 발견하면 NestedTable을 호출하여 중첩 렌더링하고, 단일 값은 리스트 아이템으로 출력합니다.
 const SummaryTable = ({summaryJson, primaryText, secondaryText, borderColor}) => {
-    let tableData = null;
-    let fallbackData = null; // Key-Value 리스트 출력을 위한 데이터 변수
+    
+    if (!summaryJson || Object.keys(summaryJson).length === 0) {
+        return <Text style={{ color: secondaryText }}>AI 요약 데이터가 없습니다.</Text>;
+    }
+    
+    // JSON 객체의 모든 키를 순회하며 출력할 데이터 리스트를 만듭니다.
+    const dataList = Object.entries(summaryJson).map(([key, value], index) => {
+        let displayValue;
+        let isTable = false;
 
-    if (summaryJson) {
-        for (const key in summaryJson) {
-            const value = summaryJson[key];
+        // 1. 값이 배열이고, 배열의 길이가 0 이상이며, 첫 번째 요소가 객체인 경우 (표 데이터)
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            isTable = true;
+            // NestedTable 컴포넌트를 호출하여 하위 테이블을 렌더링합니다.
+            displayValue = (
+                <NestedTable
+                    data={value}
+                    primaryText={primaryText}
+                    secondaryText={secondaryText}
+                    borderColor={borderColor}
+                    key={key}
+                />
+            );
+        } 
+        // 2. 값이 비어있지 않은 객체일 경우 (중첩된 객체일 경우)
+        else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+            // 중첩된 객체를 문자열로 변환하여 표시 (예: "팀: 개발, 이름: 홍길동")
+            displayValue = Object.entries(value)
+                .map(([subKey, subValue]) => `${subKey}: ${subValue}`)
+                .join(', ');
+        }
+        // 3. 그 외 단일 값 (문자열, 숫자 등)
+        else {
+            displayValue = value;
+        }
 
-            // 1. 배열이고, 배열의 길이가 0 이상이며, 첫 번째 요소가 객체인 경우 (표 데이터로 가정)
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-                tableData = value;
-                break; // 첫 번째 표 데이터만 사용
-            }
-            
-            // 2. 최상위 객체의 값 중 첫 번째로 발견된 유효한 객체를 Key-Value Fallback 데이터로 저장
-            if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
-                // 단, "일일업무일지"와 같이 템플릿의 최상위 키를 건너뛰고 내부 객체를 fallback으로 잡기 위해
-                // 첫 번째 키의 값이 객체인 경우 그 객체를 fallback으로 사용합니다. (한 번만 설정)
-                if (fallbackData === null) { 					
-                     fallbackData = value;
-                }
-            }
-            // 최상위 객체 자체를 fallback으로 사용
-            if (fallbackData === null && typeof summaryJson === 'object' && !Array.isArray(summaryJson)) {
-                fallbackData = summaryJson;
-            }
-        }
-    }
-    
-    // --- 1. 테이블 형태의 데이터(배열)가 있을 경우 (우선 순위 1) ---
-    if (tableData && tableData.length > 0) {
-        const data = tableData;
-        const headers = Object.keys(data[0]); // 테이블 헤더 추출
-        
-        // 테이블 스타일
-        const tableStyle = { 
-            width: '100%', 
-            borderCollapse: 'collapse', 
-            color: primaryText,
-            fontSize: '15px' 
-        };
-        const cellStyle = { 
-            border: `1px solid ${borderColor}`, 
-            padding: '12px 15px', 
-            textAlign: 'left',
-        };
-        const headerStyle = {
-            ...cellStyle,
-            backgroundColor: '#303030', // 헤더 배경색
-            color: PRIMARY_TEXT,
-            fontWeight: '600'
-        };
-        const bodyRowStyle = {
-            backgroundColor: 'transparent'
-        };
-        
-        return (
-            <table style={tableStyle}>
-                {/* 1. 표 헤더 (<th>) */}
-                <thead>
-                    <tr>
-                        {headers.map(header => (
-                            <th key={header} style={headerStyle}>
-                                {header}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                {/* 2. 표 본문 (<tr>, <td>) */}
-                <tbody>
-                    {data.map((row, rowIndex) => (
-                        <tr key={rowIndex} style={bodyRowStyle}>
-                            {headers.map(header => (
-                                <td key={`${rowIndex}-${header}`} style={cellStyle}>
-                                    {/* 데이터가 없으면 '-' 표시 */}
-                                    {row[header] || <Text type="secondary" style={{ color: secondaryText }}>-</Text>}
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );    
-    }
-    
-    // --- 2. 테이블 데이터(배열)가 없고 Key-Value 형태의 요약 데이터가 있을 경우 (Fallback) ---
-    if (fallbackData) {
-        // null이나 빈 문자열인 값은 출력하지 않음
-        const dataList = Object.entries(fallbackData).filter(([, value]) => 
-            value !== null && value !== '' && !(typeof value === 'object' && Object.keys(value).length === 0)
-        );
-        
-        // List 컴포넌트를 사용하여 깔끔하게 Key-Value 리스트 출력
-        return (
-            <List
-                size="large"
-                dataSource={dataList}
-                style={{ backgroundColor: 'transparent', color: primaryText, fontSize: '15px' }}
-                renderItem={([key, value]) => {
-                    // 값이 또 다른 객체인 경우 (예: "금일업무": {"월": "10", "일": "10"}) 문자열로 변환하여 표시
-                    let displayValue = value;
-                    if (typeof value === 'object' && value !== null) {
-                        displayValue = Object.entries(value)
-                            .map(([subKey, subValue]) => `${subKey}: ${subValue}`)
-                            .join(', ');
-                    }
-
-                    return (
-                        <List.Item 
-                            style={{ borderBottom: `1px solid ${borderColor}`, padding: '12px 0' }}
-                        >
-                            <Row style={{ width: '100%' }} align="top">
-                                {/* Key (항목 이름) */}
-                                <Col span={6} style={{ fontWeight: '600', color: ACCENT_COLOR }}>
-                                    {key}
-                                </Col>
-                                {/* Value (내용) */}
-                                <Col span={18} style={{ color: primaryText, whiteSpace: 'pre-wrap' }}>
-                                    {displayValue || <Text type="secondary" style={{ color: secondaryText }}>-</Text>}
-                                </Col>
-                            </Row>
-                        </List.Item>
-                    );
-                }}
-            />
-        );
-    }
-
-    // --- 3. 데이터가 없을 경우 ---
-    return <Text style={{ color: secondaryText }}>요약된 내용이 없습니다.</Text>;
+        return { key, displayValue, isTable };
+    // 값이 없는 항목(null, "")은 출력하지 않습니다.
+    }).filter(item => item.displayValue !== null && item.displayValue !== ''); 
+    
+    // Ant Design List 컴포넌트로 모든 필드를 출력합니다.
+    return (
+        <List
+            size="large"
+            dataSource={dataList}
+            style={{ backgroundColor: 'transparent', color: primaryText, fontSize: '15px' }}
+            renderItem={(item) => (
+                <List.Item 
+                    style={{ 
+                        borderBottom: `1px solid ${borderColor}`, 
+                        padding: item.isTable ? '20px 0' : '12px 0' // 테이블일 경우 패딩을 넓게 줍니다.
+                    }}
+                >
+                    <Row style={{ width: '100%' }} align="top">
+                        {/* Key (항목 이름) */}
+                        {/* 테이블일 경우 전체 너비를 사용하고, 아니면 6/24 비율로 사용 */}
+                        <Col span={item.isTable ? 24 : 6} style={{ fontWeight: '600', color: ACCENT_COLOR, marginBottom: item.isTable ? '15px' : '0' }}>
+                             {/* 테이블일 경우 제목처럼 크게 표시 */}
+                             {item.isTable ? <Title level={5} style={{ color: PRIMARY_TEXT, margin: 0 }}>{item.key} (세부 업무)</Title> : item.key}
+                        </Col>
+                        {/* Value (내용) */}
+                        {/* 테이블일 경우 전체 너비를 사용하고, 아니면 18/24 비율로 사용 */}
+                        <Col span={item.isTable ? 24 : 18} style={{ color: primaryText, whiteSpace: 'pre-wrap' }}>
+                             {/* 값 출력. 테이블 데이터는 NestedTable 컴포넌트가 이미 포함되어 있습니다. */}
+                            {item.displayValue || <Text type="secondary" style={{ color: secondaryText }}>-</Text>}
+                        </Col>
+                    </Row>
+                </List.Item>
+            )}
+        />
+    );
 }
 
 // 디자인은 차후 수정 예정
@@ -165,23 +168,47 @@ function Detail() {
   const [summaryJsonData, setSummaryJsonData] = useState(null);
   const [summaryContentMarkdown, setSummaryContentMarkdown] = useState(null); // JSON이 아닌 원본 내용을 표시하기 위해 유지
   
+  // 🚨 [수정된 로직] JSON 문자열에서 불필요한 마크다운 백틱(`)이나 설명 텍스트를 제거하고 순수한 JSON을 추출합니다.
   const extractPureJson = (text) => {
     if (!text) return null;
-    
-    // JSON 시작 문자 ({ 또는 [)의 인덱스를 찾습니다.
+
+    // 1. JSON 시작 문자 ({ 또는 [)의 인덱스를 찾습니다.
     const startIndex = text.search(/[\{\[]/);
-    
     if (startIndex === -1) {
         console.warn("JSON 시작 문자({ 또는 [)를 찾을 수 없습니다.");
-        // 순수 JSON 반환을 강제했으므로, 파싱 실패 시 원본 텍스트를 마크다운이 아닌 일반 텍스트로 간주하고 null 반환
+        return null;
+    }
+
+    // 2. 시작 인덱스부터 문자열의 끝까지의 서브스트링을 준비합니다.
+    let pureJsonCandidate = text.substring(startIndex).trim();
+
+    // 3. JSON의 끝 인덱스를 찾습니다. (가장 마지막에 나오는 } 또는 ]의 위치를 찾습니다)
+    let endIndex = -1;
+    let lastBrace = pureJsonCandidate.lastIndexOf('}');
+    let lastBracket = pureJsonCandidate.lastIndexOf(']');
+
+    // 가장 뒤에 나오는 닫는 괄호나 대괄호를 JSON의 끝으로 간주합니다.
+    if (lastBrace > lastBracket) {
+        endIndex = lastBrace;
+    } else if (lastBracket > -1) {
+        endIndex = lastBracket;
+    }
+
+    // 4. 끝 인덱스를 찾았다면 (그리고 시작 인덱스보다 뒤에 있다면),
+    // 시작부터 끝까지 (+1을 하여 닫는 괄호 포함) 잘라냅니다.
+    if (endIndex !== -1 && endIndex > 0) {
+        // pureJsonCandidate는 0부터 시작하므로 endIndex + 1을 사용합니다.
+        pureJsonCandidate = pureJsonCandidate.substring(0, endIndex + 1).trim();
+    } else {
+        // 끝을 찾지 못했다면 파싱을 시도하지 않습니다. (JSON이 제대로 닫히지 않음)
+        console.warn("JSON 닫는 문자(} 또는 ])를 찾을 수 없습니다.");
         return null; 
     }
-    
-    // 시작 인덱스부터 끝까지 잘라냅니다.
-    // AI가 여러 개의 JSON을 연달아 출력했을 때 (로그에서 발생), 첫 번째 JSON 객체의 끝을 정확히 찾는 것이 어려우므로
-    // 일단 첫 번째 { 에서 시작하여 전체를 반환하도록 수정 (백엔드 프롬프트 강화를 통해 다중 JSON 문제를 해결해야 함)
-    return text.substring(startIndex).trim();
+
+    // 5. 최종 추출된 순수한 JSON 후보 문자열을 반환합니다.
+    return pureJsonCandidate;
   };
+  // 🚨 [수정된 로직 끝]
 
   useEffect(() => {
     if (isLoginedId === 0) {
@@ -214,26 +241,17 @@ function Detail() {
         setFileAttaches(fetchedData.fileAttaches || [])
         
         if(fetchedData.summaryContent) {
-            // summaryContent에 들어온 원본 텍스트 저장 (AI가 JSON을 반환하더라도, 혹시 모를 상황 대비)
+            // summaryContent에 들어온 원본 텍스트 저장 
             setSummaryContentMarkdown(fetchedData.summaryContent); 
             
-            // AI가 여러 JSON을 연달아 반환했을 경우, 첫 번째 유효한 JSON만 파싱 시도
             let contentToParse = fetchedData.summaryContent;
 
-            // 로그에서처럼 'AI 생성 Markdown 보고서:'와 같은 불필요한 텍스트 제거 시도
-            const firstBrace = contentToParse.indexOf('{');
-            if (firstBrace > 0) {
-                contentToParse = contentToParse.substring(firstBrace);
-            }
-
             try {
-                // 순수한 JSON만 추출하는 함수 호출
+                // ⭐️ [수정된 부분] 순수한 JSON만 추출하는 함수 호출
                 const pureJsonString = extractPureJson(contentToParse);
               
                 if (pureJsonString) {
-                    // JSON.parse가 유효한 단일 객체나 배열을 파싱할 수 있도록 보장해야 함.
-                    // AI가 두 번째 JSON을 추가로 붙였을 경우 파싱이 실패할 수 있음.
-                    // 이 부분은 백엔드 프롬프트 강화가 필수적입니다.
+                    // JSON.parse가 유효한 단일 객체나 배열을 파싱할 수 있도록 보장해야 함.
                     const parsedJson = JSON.parse(pureJsonString);
                     setSummaryJsonData(parsedJson);
                 } else {
@@ -242,7 +260,7 @@ function Detail() {
                 }
                 
             } catch (error) {
-                // 파싱 실패 시 초기화 (summaryContentMarkdown은 그대로 유지)
+                // 파싱 실패 시 초기화 
                 console.error("SummaryContent JSON 파싱 최종 실패:", error);
                 setSummaryJsonData(null); 
             }
@@ -310,7 +328,7 @@ function Detail() {
             <span style={{ color: SECONDARY_TEXT, fontSize: '0.8em', marginRight: '10px' }}>제목 :</span> {workLog.title}
           </Title>
 
-          {/* 메타 정보 (작성자, 작성일) */}
+          {/* 메타 정보 (작성자, 작성일) - DB 원본 */}
           <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
             <Col xs={24} sm={12}>
               <Text style={{ color: SECONDARY_TEXT, fontSize: '15px'}}>작성자:</Text>
@@ -368,8 +386,8 @@ function Detail() {
                             ({Math.round(file.fileSize / 1024)} KB)
                           </Text>
                         </span>
-                      </div>
                     </div>
+                  </div>
                     <a
                       href={getDownloadUrl(file.filePath)}
                       target="_blank"
@@ -400,20 +418,20 @@ function Detail() {
           {/* 요약 내용 (조건부 렌더링) */}
           {workLog.summaryContent && (
             <>
-              <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>요약 내용</Divider>
+              <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>AI 분석 요약 내용</Divider>
               
               {/* 순수 JSON 파싱이 실패했을 경우, 원본 텍스트를 마크다운이 아닌 일반 텍스트로 표시 */}
               {!summaryJsonData && (
                 <pre style={{ whiteSpace: 'pre-wrap', color: SECONDARY_TEXT, backgroundColor: '#262626', padding: '15px', borderRadius: '8px', border: `1px solid ${BORDER_COLOR}` }}>
-                  AI 보고서 파싱 실패 또는 테이블 형태 아님. 원본 내용:
+                  AI 보고서 파싱 실패 또는 JSON 형식이 아님. 원본 내용:
                   {summaryContentMarkdown}
                 </pre>
               )}
 
-              {/* JSON 파싱 성공 시에만 테이블/리스트 출력 */}
+              {/* JSON 파싱 성공 시에만 SummaryTable을 호출하여 모든 JSON 데이터를 출력 */}
               {summaryJsonData && (
                 <Card
-                  title={<span style={{ color: PRIMARY_TEXT, fontWeight: 500 }}>분석 결과</span>}
+                  title={<span style={{ color: PRIMARY_TEXT, fontWeight: 500 }}>AI 분석 결과</span>}
                   variant="outlined"
                   style={{ backgroundColor: '#262626', borderColor: '#434343' }} 
                   styles={{ header: { borderBottom: `1px solid #434343` } }}
