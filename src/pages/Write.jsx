@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Form, Modal, Upload, message, Spin } from 'antd';
+import { Button, Input, Form, Modal, Upload, message, Spin, Select } from 'antd';
 import { AuthContext } from '../context/AuthContext'; 
 // AuthContext가 존재한다고 가정하고 Context를 사용합니다.
 
@@ -54,7 +54,7 @@ function Write(){
     navigate("/list");
   };
 
-  const handleSubmit = async (values) => { 
+  const handleSubmit = async (values) => {
     setIsSubmitLoading(true); 
 
     // 첨부파일을 포함하기 위해 FormData 사용
@@ -67,6 +67,11 @@ function Write(){
         setIsSubmitLoading(false); 
         return; 
     }
+      //필수 문서 정보 추가
+      formData.append ('author', values.author);
+      formData.append ('position', values.position);
+      formData.append ('reportId', values.reportId);
+      formData.append ('documentType', values.documentType);
       
       formData.append ('title', values.title);
       formData.append ('mainContent', mainContentMarkdown);
@@ -85,12 +90,25 @@ function Write(){
         credentials: "include" 
       } 
     );
-      if(response.ok){
-          openModal('등록이 완료되었습니다. (AI 요약 포함!)');
+      if(!response.ok){
+          openModal('DB 저장 및 AI 요약에 실패했습니다.');
       } else {
         // 서버 응답 상태는 OK가 아니지만, 응답을 받은 경우 (4xx, 5xx)
         openModal(`등록을 실패했습니다. (HTTP Code: ${response.status})`);
       }
+      const generateResponse = await fetch('http://localhost:8081/api/usr/work/workLog/generate',{
+        method: 'post',
+        body: formData,
+        credentials: "include" 
+      });
+
+      if(generateResponse.ok){
+          // 두 작업 모두 성공
+          openModal('등록이 완료되었습니다. (DB 저장, AI 요약, DOCX 문서 생성 완료)');
+      } else {
+        // DB 저장은 성공했으나 DOCX 생성이 실패한 경우 (부분 성공)
+        openModal(`DB 저장 및 AI 요약은 완료되었으나, DOCX 문서 생성에 실패했습니다.`);
+      }
     } catch (error) {
       console.error("통신 오류:", error);
       // fetch 자체가 실패한 경우 (네트워크 오류, CORS 문제 등)
@@ -113,6 +131,45 @@ function Write(){
         onFinish={handleSubmit}
         disabled={isSubmitLoading} 
       >
+        {/* 사용자 및 문서 기본 정보 그룹 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border">
+          <Form.Item
+            label="작성자"
+            name="author"
+            rules={[{ required: true, message: '작성자 입력'}]}
+          >
+            <Input placeholder="작성자" />
+          </Form.Item>
+          <Form.Item
+            label="직책"
+            name="position"
+            rules={[{ required: true, message: '직책 입력'}]}
+          >
+            <Input placeholder="직책" />
+          </Form.Item>
+          <Form.Item
+            label="보고서 ID"
+            name="reportId"
+            rules={[{ required: true, message: '보고서 ID 입력'}]}
+          >
+            <Input placeholder="RPT-XXXX" />
+          </Form.Item>
+          <Form.Item
+            label="양식 선택"
+            name="documentType"
+            rules={[{ required: true, message: '양식 선택'}]}
+          >
+            <Select placeholder="필요한 양식을 선택하세요">
+              {/* [수정/추가] 사용자가 요청한 모든 양식 (1, 3, 4, 5, 6, 7번)을 옵션에 추가합니다. */}
+              <Option value="6">1번 양식 (주간 업무 일지)</Option>
+              <Option value="1">3번 양식 (일일 업무 보고서)</Option>
+              <Option value="2">4번 양식 (일일 업무 일지)</Option>
+              <Option value="3">5번 양식 (팀 일일 보고서)</Option>
+              <Option value="4">6번 양식 (개인 일일 보고서)</Option>
+              <Option value="5">7번 양식 (공사 업무 일지)</Option>
+            </Select>
+          </Form.Item>
+        </div>
 
         <Form.Item
           label={<span className="text-lg font-semibold text-gray-700">Title</span>}
