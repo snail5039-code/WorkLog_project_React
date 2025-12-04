@@ -99,7 +99,7 @@ function Write(){
         setIsSubmitLoading (false); 
     }
   };
-
+  
   return (
     <div className="app-container max-w-2xl mx-auto p-6 space-y-4">
       <div className="flex justify-between">
