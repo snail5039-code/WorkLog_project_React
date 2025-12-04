@@ -3,9 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, Form, Checkbox, Modal, message } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 
-import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from 'firebase/auth'; // Firebase 인증 함수 및 Provider
-import { auth } from '../firebaseConfig'; // Firebase 인증 인스턴스를 가져옵니다.
-
 const LOGIN_REQUIRED_KEY = 'login_required_message';
 
 function Login() {
@@ -49,28 +46,12 @@ function Login() {
   };
   const onFinish = async (values) => {
 
-
-  const handleSocialLogin = async (providerName) => {
-  let provider;
-  
-  // providerName에 따라 적절한 Firebase Provider 인스턴스를 생성
-  if (providerName === 'google') {
-    provider = new GoogleAuthProvider();
-  } else if (providerName === 'github') {
-    provider = new GithubAuthProvider();
-  } else {
-    console.error('지원되지 않는 소셜 로그인 제공업체:', providerName);
-    return;
-  }
     const loginData = {
       loginId : values.loginId,
       loginPw : values.loginPw,
     };
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user; // 요것들 깃헙하고 구글 로그인 땜에 만든거임
-
       const response = await fetch('http://localhost:8081/api/usr/member/login', {
         method: 'post',
         headers: {'content-type' : 'application/json'},
@@ -80,9 +61,9 @@ function Login() {
 
       if(response.ok) {
         const data = await response.json();
-        openModal(user.displayName + '님 환영합니다.');
+        openModal(values.loginId + '님 환영합니다.');
         setTimeout(() => {
-          setIsLoginedId(user.uid); 
+          setIsLoginedId(data); 
           navigate("/");
         }, 1200);
 
