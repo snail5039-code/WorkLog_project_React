@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button, message, Divider, List, Card, Layout, Typography, Space, Row, Col } from 'antd';
 import { DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { AuthContext } from '../context/AuthContext'; 
+import { link } from 'framer-motion/client';
 
 
 const { Content } = Layout;
@@ -289,7 +290,96 @@ function Detail() {
   const getDownloadUrl = (storedFilename) => {
     return `http://localhost:8081/api/usr/work/download/${storedFilename}`; // 백엔드에서 만들어야됌... 만들어버렸음!
   };
+//ai 요약본 파일 생성해서 다운로드 하는 것!
+  const handleDownloadSummary = () => {
+    if (!summaryContentMarkdown) {
+      message.error("다운로드할 요약 내용이 없습니다.");
+      return;
+    }
+        try {
+            // 파일 내용을 Blob 객체로 생성 (마크다운 텍스트), blob로 해야 마크다운 텍스트를 담을 수 있음 
+            const blob = new Blob([summaryContentMarkdown], { type: 'text/markdown;charset=utf-8' });
 
+            // a 태그를 생성하여 다운로드 링크를 만듭니다.
+            const url = URL.createObjectURL(blob); // blob 객체 접근 할 수 있게 임시 주소 생성
+            const a = document.createElement('a');
+            a.href = url;
+            // 쉽게 여기서 보이지는 않는 url을 만들어서 
+            
+            // 파일 이름 설정 (제목 기반)
+            const fileName = workLog.title 
+                ? `${workLog.title.replace(/[^a-z0-9]/gi, '_')}_AI_Summary.md`//특수문자 없에고 붙이는 거임
+                : `WorkLog_${id}_AI_Summary.md`;
+            
+            a.download = fileName;
+            
+            // 여기서 호출해서 다운로드를 받는데 끝나면 메모리 해제를 통해 누수를 방지
+            // 다운로드 실행
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // 메모리 해제
+
+            message.success(`'${fileName}' 다운로드를 시작합니다.`);
+          //쉽게 말해서 ai는 요약한걸 임시 메모리에 가지고 있다가 그 주소를 보이지 않게 만들어서 클릭하면 이동해서 다운 받고 메모리 해제해서 누수 막는다는거
+
+        } catch (error) {
+            console.error("AI 요약 다운로드 실패:", error);
+            message.error("요약 파일 다운로드에 실패했습니다.");
+        }
+    };
+
+    // ai 요약 docx 다운 함수
+    const handleDownloadSummaryDocx = async () => {
+      if(!workLog || !workLog) {
+        message.error("다운로드할 요약 내용이 없습니다.");
+        return;
+      }
+      
+      const API_URL = `http://localhost:8081/api/usr/work/workLog/docx`;
+
+      try {
+        message.loading({ content: 'AI 요약 DOCX 파일 생성 및 다운로드 준비 중...', key: 'docx_summary_save' });
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ workLog})
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`다운로드 실패 : HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        // 파일명 추출하는 거임 
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let fileName = workLog.title
+          ? `${workLog.title.replace(/[^a-z0-9]/gi, '_')}_AI_Summary.docx`
+          : `WorkLog_${workLog.id}_AI_Summary.docx`;
+        if (contentDisposition) {
+          const matches = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+          if (matches && matches[1]) {
+            fileName = decodeURIComponent(matches[1].replace(/%20/g, ' '));
+          }
+        }
+        //3. 다운로드 실행 
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        message.success({ content: `'${fileName}' 다운로드를 시작합니다.`, key: 'docx_summary_save', duration: 3 });
+      } catch (error) {
+        console.error('AI 요약 Docx 다운로드 실패:', error);
+        message.error({ content: `Docx 다운로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`, key: 'docx_summary_save', duration: 3 });
+      }
+    };
   return (
     // 전체 레이아웃 (어두운 배경 적용)
     <Layout style={{ minHeight: '100vh', backgroundColor: DARK_BG, color: PRIMARY_TEXT }}>
@@ -420,6 +510,38 @@ function Detail() {
           {/* 요약 내용 (조건부 렌더링) */}
           {workLog.summaryContent && (
             <>
+            <Space size="middle" style={{ marginTop: '5px', marginBottom: '15px' }}>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadSummary}
+                style={{ 
+                    backgroundColor: ACCENT_COLOR, 
+                    borderColor: ACCENT_COLOR, 
+                    fontSize: '14px', 
+                    padding: '0 15px', 
+                    height: '34px',
+                }}
+              >
+                AI 요약본 다운로드 (.md)
+              </Button>
+              {/* ⭐️ [추가] DOCX 다운로드 버튼 (fetch API 연결) */}
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadSummaryDocx} // ⭐️ fetch 기반 함수 연결
+                  style={{ 
+                      backgroundColor: '#faad14', // 주황색 계열로 변경하여 차별화
+                      borderColor: '#faad14', 
+                      fontSize: '14px', 
+                      padding: '0 15px', 
+                      height: '34px',
+                      color: '#141414' // 텍스트 색상
+                  }}
+                >
+                  AI 요약본 다운로드 (.docx)
+                </Button>             
+            </Space>
               <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>AI 분석 요약 내용</Divider>
               
               {/* 순수 JSON 파싱이 실패했을 경우, 원본 텍스트를 마크다운이 아닌 일반 텍스트로 표시 */}
