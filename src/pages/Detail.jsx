@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button, message, Divider, List, Card, Layout, Typography, Space, Row, Col } from 'antd';
 import { DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { AuthContext } from '../context/AuthContext'; 
-import { link } from 'framer-motion/client';
 
 
 const { Content } = Layout;
@@ -329,57 +328,7 @@ function Detail() {
         }
     };
 
-    // ai 요약 docx 다운 함수
-    const handleDownloadSummaryDocx = async () => {
-      if(!workLog || !workLog) {
-        message.error("다운로드할 요약 내용이 없습니다.");
-        return;
-      }
-      
-      const API_URL = `http://localhost:8081/api/usr/work/workLog/docx`;
-
-      try {
-        message.loading({ content: 'AI 요약 DOCX 파일 생성 및 다운로드 준비 중...', key: 'docx_summary_save' });
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ workLog})
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`다운로드 실패 : HTTP error! status: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        // 파일명 추출하는 거임 
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let fileName = workLog.title
-          ? `${workLog.title.replace(/[^a-z0-9]/gi, '_')}_AI_Summary.docx`
-          : `WorkLog_${workLog.id}_AI_Summary.docx`;
-        if (contentDisposition) {
-          const matches = contentDisposition.match(/filename\*=UTF-8''(.+)/);
-          if (matches && matches[1]) {
-            fileName = decodeURIComponent(matches[1].replace(/%20/g, ' '));
-          }
-        }
-        //3. 다운로드 실행 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-
-        message.success({ content: `'${fileName}' 다운로드를 시작합니다.`, key: 'docx_summary_save', duration: 3 });
-      } catch (error) {
-        console.error('AI 요약 Docx 다운로드 실패:', error);
-        message.error({ content: `Docx 다운로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`, key: 'docx_summary_save', duration: 3 });
-      }
-    };
+    
   return (
     // 전체 레이아웃 (어두운 배경 적용)
     <Layout style={{ minHeight: '100vh', backgroundColor: DARK_BG, color: PRIMARY_TEXT }}>
@@ -509,38 +458,68 @@ function Detail() {
 
           {/* 요약 내용 (조건부 렌더링) */}
           {workLog.summaryContent && (
-            <>
+    <>
             <Space size="middle" style={{ marginTop: '5px', marginBottom: '15px' }}>
-              <Button
-                type="primary"
-                icon={<DownloadOutlined />}
-                onClick={handleDownloadSummary}
-                style={{ 
-                    backgroundColor: ACCENT_COLOR, 
-                    borderColor: ACCENT_COLOR, 
-                    fontSize: '14px', 
-                    padding: '0 15px', 
-                    height: '34px',
-                }}
-              >
-                AI 요약본 다운로드 (.md)
-              </Button>
-              {/* ⭐️ [추가] DOCX 다운로드 버튼 (fetch API 연결) */}
-                <Button
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  onClick={handleDownloadSummaryDocx} // ⭐️ fetch 기반 함수 연결
-                  style={{ 
-                      backgroundColor: '#faad14', // 주황색 계열로 변경하여 차별화
-                      borderColor: '#faad14', 
-                      fontSize: '14px', 
-                      padding: '0 15px', 
-                      height: '34px',
-                      color: '#141414' // 텍스트 색상
-                  }}
-                >
-                  AI 요약본 다운로드 (.docx)
-                </Button>             
+
+              {/* AI 요약본 다운로드 */}
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadSummary}
+                  style={{ 
+                      backgroundColor: ACCENT_COLOR, 
+                      borderColor: ACCENT_COLOR, 
+                      fontSize: '14px', 
+                      padding: '0 15px', 
+                      height: '34px',
+                  }}
+                >
+                  AI 요약본 다운로드 (.md)
+                </Button>
+
+                {/* 자동 생성된 DOCX 다운로드 */}
+                {workLog.docxPath && (
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => {
+                      window.location.href = getDownloadUrl(workLog.docxPath);
+                    }}
+                    style={{
+                      backgroundColor: '#52c41a',
+                      borderColor: '#52c41a',
+                      fontSize: '14px',
+                      padding: '0 15px',
+                      height: '34px',
+                      color: '#141414'
+                    }}
+                  >
+                    자동 생성된 DOCX 다운로드
+                  </Button>
+                )}
+
+                {/* ⭐⭐⭐ 템플릿 DOCX 다운로드 버튼 추가됨 ⭐⭐⭐ */}
+                {workLog.documentType && (
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => {
+                      // 문서양식 번호로 템플릿 다운로드 API 호출
+                      window.location.href = `http://localhost:8081/api/usr/work/template/${workLog.documentType}`;
+                    }}
+                    style={{
+                      backgroundColor: '#ffa940',
+                      borderColor: '#ffa940',
+                      fontSize: '14px',
+                      padding: '0 15px',
+                      height: '34px',
+                      color: '#141414'
+                    }}
+                  >
+                    선택한 템플릿 DOCX 다운로드
+                  </Button>
+                )}
+                {/* ⭐⭐⭐ 추가 끝 ⭐⭐⭐ */}
             </Space>
               <Divider titlePlacement="start" style={{ color: SECONDARY_TEXT, borderColor: BORDER_COLOR, margin: '40px 0 20px 0', fontSize: '15px' }}>AI 분석 요약 내용</Divider>
               

@@ -83,38 +83,33 @@ function Write(){
         });
       }
 
-    try {
-      const response = await fetch('http://localhost:8081/api/usr/work/workLog',{
-        method: 'post',
-        body: formData,
-        credentials: "include" 
-      } 
-    );
-      if(!response.ok){
-          openModal('DB 저장 및 AI 요약에 실패했습니다.');
-      } else {
-        // 서버 응답 상태는 OK가 아니지만, 응답을 받은 경우 (4xx, 5xx)
-        openModal(`등록을 실패했습니다. (HTTP Code: ${response.status})`);
-      }
-      const generateResponse = await fetch('http://localhost:8081/api/usr/work/workLog/generate',{
-        method: 'post',
-        body: formData,
-        credentials: "include" 
+    if (values.files && values.files.length > 0) {
+      values.files.forEach((fileObj) => {
+        formData.append("files", fileObj.originFileObj);
       });
+    }
 
-      if(generateResponse.ok){
-          // 두 작업 모두 성공
-          openModal('등록이 완료되었습니다. (DB 저장, AI 요약, DOCX 문서 생성 완료)');
-      } else {
-        // DB 저장은 성공했으나 DOCX 생성이 실패한 경우 (부분 성공)
-        openModal(`DB 저장 및 AI 요약은 완료되었으나, DOCX 문서 생성에 실패했습니다.`);
-      }
+    try {
+      const response = await fetch(
+        "http://localhost:8081/api/usr/work/workLog",
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        openModal("DB 저장 또는 AI 처리 중 오류가 발생했습니다.");
+      } else {
+        openModal("등록이 완료되었습니다. (DB 저장 + AI 요약 + DOCX 생성)");
+      }
+
     } catch (error) {
       console.error("통신 오류:", error);
-      // fetch 자체가 실패한 경우 (네트워크 오류, CORS 문제 등)
-      openModal('통신 오류가 발생했습니다. 백엔드 서버 상태를 확인해주세요.');
+      openModal("통신 오류: 서버 연결을 확인해주세요.");
     } finally {
-        setIsSubmitLoading (false); 
+      setIsSubmitLoading(false);
     }
   };
   
@@ -161,12 +156,12 @@ function Write(){
           >
             <Select placeholder="필요한 양식을 선택하세요">
               {/* [수정/추가] 사용자가 요청한 모든 양식 (1, 3, 4, 5, 6, 7번)을 옵션에 추가합니다. */}
-              <Option value="6">1번 양식 (주간 업무 일지)</Option>
-              <Option value="1">3번 양식 (일일 업무 보고서)</Option>
-              <Option value="2">4번 양식 (일일 업무 일지)</Option>
-              <Option value="3">5번 양식 (팀 일일 보고서)</Option>
-              <Option value="4">6번 양식 (개인 일일 보고서)</Option>
-              <Option value="5">7번 양식 (공사 업무 일지)</Option>
+                <Select.Option value="6">1번 양식 (주간 업무 일지)</Select.Option>
+                <Select.Option value="1">3번 양식 (일일 업무 보고서)</Select.Option>
+                <Select.Option value="2">4번 양식 (일일 업무 일지)</Select.Option>
+                <Select.Option value="3">5번 양식 (팀 일일 보고서)</Select.Option>
+                <Select.Option value="4">6번 양식 (개인 일일 보고서)</Select.Option>
+                <Select.Option value="5">7번 양식 (공사 업무 일지)</Select.Option>
             </Select>
           </Form.Item>
         </div>
