@@ -53,9 +53,6 @@ function List() {
   return (
    <div className="p-6 max-w-4xl mx-auto bg-white shadow-lg rounded-xl">
       <div className="mb-4">
-        <Link to="/" className="text-blue-500 hover:text-blue-700 font-medium">
-          홈으로
-        </Link>
       </div>
       
       <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">게시글 목록</h2>

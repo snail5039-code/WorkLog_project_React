@@ -1,29 +1,53 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Form, Modal, Upload, message, Spin, Select } from 'antd';
+import { Button, Input, Form, Modal, message, Spin, Select } from 'antd';
 import { AuthContext } from '../context/AuthContext'; 
-// AuthContext가 존재한다고 가정하고 Context를 사용합니다.
+import { TEMPLATE_MAIN_PLACEHOLDER } from '../config/templateSummaryConfig';
 
 const LOGIN_REQUIRED_KEY = 'login_required_message';
 // 로그인 후 이용가능 메세지 두번 출력하지 않기 위해 만든 변수 
 
+const TEMPLATE_OPTIONS = [
+  { value: 'TPL1', label: '템플릿1 - 주간 업무일지' },
+  { value: 'TPL3', label: '템플릿3 - 일일 보고(간단)' },
+  { value: 'TPL4', label: '템플릿4 - 부서/작성자/계획형' },
+  { value: 'TPL5', label: '템플릿5 - 업무 리스트형' },
+  { value: 'TPL6', label: '템플릿6 - 오늘 업무/이슈/내일 계획' },
+  { value: 'TPL7', label: '템플릿7 - 현장/프로젝트 상세형' },
+  // 나중에 템플릿 늘어나면 여기만 추가하면 됨
+  // { value: 'TPL2', label: '템플릿2 - 월간 보고서' },
+];
+
 function Write(){
   
   const navigate = useNavigate(); 
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  
   const [form] = Form.useForm(); // 이 넘이 관리함!
-
   const [isSubmitLoading, setIsSubmitLoading] = useState(false); // 얘가 요약할때 로딩 창임
-
   // Context에서 로그인 ID를 가져옵니다.
-  // AuthContext가 존재하지 않을 경우를 대비하여 기본값을 설정합니다. (다만 이 환경에서는 존재한다고 가정합니다)
   const {isLoginedId} = useContext(AuthContext); 
-
   // 메인 콘텐츠 TextArea에 접근하기 위한 Ref
   const mainContentRef = useRef(null); 
+  const [selectedTemplateId, setSelectedTemplateId] = useState('TPL1');
+  const handleTemplateChange = (value) => {
+      // 지금 메인 내용에 뭐가 써져 있는지 확인
+      const currentContent = form.getFieldValue('mainContent');
+
+      // 아무것도 안 써져 있으면 → 예시 텍스트로 채워줌
+      if (!currentContent || !currentContent.trim()) {
+        form.setFieldsValue({ // 쉽게 생각하셈 안티 디자인 폼 때문에 이렇게 한거!
+          templateId: value,
+          mainContent: TEMPLATE_MAIN_PLACEHOLDER[value] || '',
+        });
+      } else {
+        // 이미 글이 있으면 내용은 그대로 두고 템플릿만 변경
+        form.setFieldsValue({
+          templateId: value,
+        });
+      }
+  };
+ 
 
   // 요게 로그인 검증 하는 거임 세션에서 받아온 값으로!!!
   useEffect (() => {
@@ -54,7 +78,7 @@ function Write(){
     navigate("/list");
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values) => { 
     setIsSubmitLoading(true); 
 
     // 첨부파일을 포함하기 위해 FormData 사용
@@ -67,15 +91,11 @@ function Write(){
         setIsSubmitLoading(false); 
         return; 
     }
-      //필수 문서 정보 추가
-      formData.append ('author', values.author);
-      formData.append ('position', values.position);
-      formData.append ('reportId', values.reportId);
-      formData.append ('documentType', values.documentType);
       
       formData.append ('title', values.title);
       formData.append ('mainContent', mainContentMarkdown);
       formData.append ('sideContent', values.sideContent);
+      formData.append ('templateId', values.templateId || 'TPL1');
       
       if(values.files && values.files.length > 0) {
         values.files.forEach((fileObj) => {
@@ -83,41 +103,32 @@ function Write(){
         });
       }
 
-    if (values.files && values.files.length > 0) {
-      values.files.forEach((fileObj) => {
-        formData.append("files", fileObj.originFileObj);
-      });
-    }
-
     try {
-      const response = await fetch(
-        "http://localhost:8081/api/usr/work/workLog",
-        {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        openModal("DB 저장 또는 AI 처리 중 오류가 발생했습니다.");
+      const response = await fetch('http://localhost:8081/api/usr/work/workLog',{
+        method: 'post',
+        body: formData,
+        credentials: "include" 
+      } 
+    );
+      if(response.ok){
+          openModal('등록이 완료되었습니다. (AI 요약 포함!)');
       } else {
-        openModal("등록이 완료되었습니다. (DB 저장 + AI 요약 + DOCX 생성)");
+        // 서버 응답 상태는 OK가 아니지만, 응답을 받은 경우 (4xx, 5xx)
+        openModal(`등록을 실패했습니다. (HTTP Code: ${response.status})`);
       }
-
     } catch (error) {
       console.error("통신 오류:", error);
-      openModal("통신 오류: 서버 연결을 확인해주세요.");
+      // fetch 자체가 실패한 경우 (네트워크 오류, CORS 문제 등)
+      openModal('통신 오류가 발생했습니다. 백엔드 서버 상태를 확인해주세요.');
     } finally {
-      setIsSubmitLoading(false);
+        setIsSubmitLoading (false); 
     }
   };
-  
+
   return (
     <div className="app-container max-w-2xl mx-auto p-6 space-y-4">
       <div className="flex justify-between">
         <div className="text-xl font-bold p-2 border-b text-start">WorkLog Write</div>
-        <Link to="/" className="pt-4">홈으로</Link>
       </div>
       <Form
         form={form}
@@ -126,45 +137,6 @@ function Write(){
         onFinish={handleSubmit}
         disabled={isSubmitLoading} 
       >
-        {/* 사용자 및 문서 기본 정보 그룹 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border">
-          <Form.Item
-            label="작성자"
-            name="author"
-            rules={[{ required: true, message: '작성자 입력'}]}
-          >
-            <Input placeholder="작성자" />
-          </Form.Item>
-          <Form.Item
-            label="직책"
-            name="position"
-            rules={[{ required: true, message: '직책 입력'}]}
-          >
-            <Input placeholder="직책" />
-          </Form.Item>
-          <Form.Item
-            label="보고서 ID"
-            name="reportId"
-            rules={[{ required: true, message: '보고서 ID 입력'}]}
-          >
-            <Input placeholder="RPT-XXXX" />
-          </Form.Item>
-          <Form.Item
-            label="양식 선택"
-            name="documentType"
-            rules={[{ required: true, message: '양식 선택'}]}
-          >
-            <Select placeholder="필요한 양식을 선택하세요">
-              {/* [수정/추가] 사용자가 요청한 모든 양식 (1, 3, 4, 5, 6, 7번)을 옵션에 추가합니다. */}
-                <Select.Option value="6">1번 양식 (주간 업무 일지)</Select.Option>
-                <Select.Option value="1">3번 양식 (일일 업무 보고서)</Select.Option>
-                <Select.Option value="2">4번 양식 (일일 업무 일지)</Select.Option>
-                <Select.Option value="3">5번 양식 (팀 일일 보고서)</Select.Option>
-                <Select.Option value="4">6번 양식 (개인 일일 보고서)</Select.Option>
-                <Select.Option value="5">7번 양식 (공사 업무 일지)</Select.Option>
-            </Select>
-          </Form.Item>
-        </div>
 
         <Form.Item
           label={<span className="text-lg font-semibold text-gray-700">Title</span>}
@@ -175,6 +147,20 @@ function Write(){
           <Input
             placeholder={'제목을 입력하세요.'}
             className="w-full"  
+          />
+        </Form.Item>
+
+        <Form.Item
+          label={<span className="text-lg font-semibold text-gray-700">문서 양식</span>}
+          name="templateId"
+          initialValue="TPL1"
+          rules={[{ required: true, message: '사용할 양식을 선택해 주세요.' }]}
+          className="mb-2"
+        >
+          <Select
+            options={TEMPLATE_OPTIONS}
+            style={{ maxWidth: 320 }}
+            onChange={handleTemplateChange}  
           />
         </Form.Item>
 
@@ -189,7 +175,7 @@ function Write(){
           <Input.TextArea
             ref={mainContentRef} // ref 연결
             rows={15} // 충분히 큰 높이
-            placeholder="오늘의 작업 내용, 발생한 이슈 및 해결 과정 등을 입력하세요."
+            placeholder="(예시를 참고해서, 실제 업무 내용을 자유롭게 수정/추가해서 작성해 주세요.)"
             // Input.TextArea 자체의 테두리와 포커스 스타일을 제거하고 배경을 투명하게 설정하여 컨테이너 스타일과 통합
             className="border-none focus:ring-0 focus:border-0 bg-transparent text-base p-2"
           />
@@ -206,17 +192,6 @@ function Write(){
               placeholder={'내용을 입력하세요.'}
               className="w-full"  
             />
-          </Form.Item>
-
-          <Form.Item
-            label={<span className="pl-5 text-sm font-semibold text-gray-700">첨부파일</span>}
-            name="files"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList} 
-          > 
-              <Upload beforeUpload={() => false} multiple maxCount={5}> 
-              <Button className="py-1">파일 선택</Button>
-            </Upload>
           </Form.Item>
         </div>
 
