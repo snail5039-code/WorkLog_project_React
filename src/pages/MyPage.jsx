@@ -42,6 +42,9 @@ function MyPage() {
   // 내 업무일지 목록
   const [myWorkLogs, setMyWorkLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // ✅ 로그인 체크
   useEffect(() => {
@@ -70,7 +73,7 @@ function MyPage() {
       try {
         // --- 1) 요약 정보 호출 ---
         const summaryRes = await fetch(
-          'http://localhost:8081/api/usr/workLog/myPageSummary',
+          `http://localhost:8081/api/usr/workLog/myPageSummary?page=${page}&size=${pageSize}`,
           {
             credentials: 'include',
           }
@@ -79,8 +82,12 @@ function MyPage() {
         if (!summaryRes.ok) {
           throw new Error('요약 정보 조회 실패');
         }
-
         const data = await summaryRes.json();
+        console.log(
+          '백엔드 응답:',
+          'totalCount =', data.summary?.totalCount,
+          'myWorkLogs.length =', (data.myWorkLogs || []).length
+        );
         setSummary(data.summary || { totalCount: 0, thisMonthCount: 0});
         setMyWorkLogs(data.myWorkLogs || []);
 
@@ -93,7 +100,7 @@ function MyPage() {
     }
 
     fetchData();
-  }, []);
+  }, [isLoggedIn, page, pageSize]);
 
   // 테이블 컬럼 정의
   const columns = [
@@ -255,7 +262,7 @@ function MyPage() {
               <Statistic
                 title={<span style={{ color: SECONDARY_TEXT }}>총 작성 개수</span>}
                 value={summary?.totalCount ?? 0}
-                valueStyle={{ color: PRIMARY_TEXT, fontSize: 26 }}
+                styles={{ color: PRIMARY_TEXT, fontSize: 26 }}
               />
             </Card>
           </Col>
@@ -275,7 +282,7 @@ function MyPage() {
                   </span>
                 }
                 value={summary?.thisMonthCount ?? 0}
-                valueStyle={{ color: '#059669', fontSize: 26 }}
+                styles={{ color: '#059669', fontSize: 26 }}
               />
             </Card>
           </Col>
@@ -400,7 +407,17 @@ function MyPage() {
             columns={columns}
             dataSource={myWorkLogs}
             loading={loading}
-            pagination={false} // 우선 페이징 없이 최근 10개만
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: summary?.totalCount ?? 0,
+              showSizeChanger: true,
+            }} 
+            onChange={(pagination)  => {
+              console.log('페이지 변경:', pagination) // 테스트용
+              setPage(pagination.current);
+              setPageSize(pagination.pageSize);
+            }}
             size="middle"
           />
         </Card>

@@ -1,14 +1,25 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; 
-import { Button, Input, Form, Checkbox, Modal, Upload, message } from 'antd';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'; 
+import { message, Pagination } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 
 const LOGIN_REQUIRED_KEY = 'login_required_message';
 // 디자인은 차후 수정 예정
+
 function List() {
 
   const navigate = useNavigate(); 
   const {isLoginedId} = useContext(AuthContext);
+
+  const [searchParams] = useSearchParams();
+  const boardIdParam = searchParams.get('boardId');
+  const boardId = boardIdParam ? Number(boardIdParam) : null;
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect (() => {
     if(isLoginedId == 0) {
@@ -26,29 +37,38 @@ function List() {
     return null;
   }
 
-
-  const [articles, setArticles] = useState([]);
+  useEffect(() => {
+      setPage(1);
+    }, [boardIdParam]);
 
   useEffect(() => {
-    
-    const API_URL = 'http://localhost:8081/api/usr/work/list';
+    async function fetchList() {
+      setLoading(true);
+      try {
+        let url = `http://localhost:8081/api/usr/work/list?page=${page}&size=${pageSize}`;
+        if(boardIdParam != null) {
+          url += `&boardId=${boardIdParam}`
+        } 
 
-    fetch(API_URL)
-      .then(Response => {
-        if(!Response.ok) {
-          throw new Error(`HTTP error! status: ${Response.status}`);
-        }
-        return Response.json();
-      })
-      .then(fetchedData => {
-        setArticles(fetchedData || []);
+        const res = await fetch(
+          url,
+          {credentials: 'include'}
+        );
+        if(!res.ok) throw new Error('목록 조회 실패');
+        
+        const data = await res.json();
+        setArticles(data.items);
+        setTotalCount(data.totalCount);
 
-      })
-      .catch(error => {
-        console.error("데이터 불러오기 실패:", error);
-        setArticles([]);
-      })
-  }, []);
+      } catch (error) {
+        console.error(error);
+        message.error(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchList();
+  }, [boardIdParam, page, pageSize]);
 
   return (
    <div className="p-6 max-w-4xl mx-auto bg-white shadow-lg rounded-xl">
@@ -90,6 +110,20 @@ function List() {
             )}          
           </tbody>
         </table>
+        {/* 페이징 */}
+        <div className="mt-4 flex justify-center">
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={totalCount}
+          onChange={(p, size) => {
+            setPage(p);
+            setPageSize(size);
+          }}
+          showSizeChanger
+          showTotal={(total) => `총 ${total}건`}
+        />
+        </div>
       </div>
     </div>
   );

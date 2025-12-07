@@ -123,19 +123,19 @@ function MainLayout() {
               게시물 목록
             </Link>
             <Link
-              to="/daily"
+              to="/list?boardId=4"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               일일업무일지
             </Link>
             <Link
-              to="/weekly"
+              to="/list?boardId=5"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               주간업무일지
             </Link>
             <Link
-              to="/monthly"
+              to="/list?boardId=6"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               월간업무일지
@@ -155,7 +155,7 @@ function MainLayout() {
               인수인계 작성
             </Link>
             <Link
-              to="/handover/list"
+              to="/list?boardId=7"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               인수인계 목록
@@ -169,16 +169,22 @@ function MainLayout() {
             onToggle={() => toggleMenu('etc')}
           >
             <Link
-              to="/notice"
+              to="/list?boardId=1"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               공지사항
             </Link>
             <Link
-              to="/freeboard"
+              to="/list?boardId=2"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               자유게시판
+            </Link>
+            <Link
+              to="/list?boardId=3"
+              className="block px-3 py-2 rounded-md hover:bg-gray-100"
+            >
+              질문과 답변
             </Link>
           </AccordionSection>
         </aside>
