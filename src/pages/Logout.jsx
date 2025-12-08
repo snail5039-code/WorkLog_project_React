@@ -10,6 +10,9 @@ function Logout() {
 
   const {isLoginedId, setIsLoginedId } = useContext(AuthContext);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+
   useEffect (() => {
     if(isLoginedId == 0) {
       message.error({
@@ -25,9 +28,6 @@ function Logout() {
   if(isLoginedId == 0) {
     return null;
   }
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
 
   const openModal = (message) => {
     setModalMessage(message);

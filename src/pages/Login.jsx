@@ -7,7 +7,18 @@ const LOGIN_REQUIRED_KEY = 'login_required_message';
 
 function Login() {
   const [form] = Form.useForm();
+  const [findIdForm] = Form.useForm();
+  const [findPwForm] = Form.useForm();
 
+  const [isFindIdModalOpen, setIsFindIdModalOpen] = useState(false);
+  const [isFindPwModalOpen, setIsFindPwModalOpen] = useState(false);
+
+  const [sendingIdCode, setSendingIdCode] = useState(false);
+  const [verifyingIdCode, setVerifyingIdCode] = useState(false);
+  const [foundLoginId, setFoundLoginId] = useState('');
+  const [sendingPwCode, setSendingPwCode] = useState(false);
+  const [verifyingPwCode, setVerifyingPwCode] = useState(false);
+    
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
@@ -17,22 +28,19 @@ function Login() {
   const {isLoginedId, setIsLoginedId} = useContext(AuthContext);
 
   useEffect (() => {
-    setTimeout(() => {
-      if(isLoginedId > 0) {
-        message.error({
-          // content: "로그인은 로그아웃 후 이용 가능합니다.", 내일 해결하기로
-          key: LOGIN_REQUIRED_KEY,
-            duration: 5,
-        });
-        // 리액트 문제로 충돌이 난다. 그래서 키 값을 줘서 안티 디자인이 인식해서 오류 제거하는 느낌
-        navigate("/"); 
-      }
-      
-    }, 0);
-  }, [isLoginedId, navigate]);
-  // 매끄럽게 화면 이동 없으면 깜박인다고 함 
-  if(isLoginedId > 0) {
-    return isLoginedId;
+      if (isLoginedId > 0) {
+      message.error({
+        content: '로그인은 로그아웃 후 이용 가능합니다.', 
+        key: LOGIN_REQUIRED_KEY,
+        duration: 5,
+      });
+      navigate('/');
+    }
+  }, []);
+
+  // ✅ 이미 로그인 상태면 아무것도 렌더하지 않음
+  if (isLoginedId > 0) {
+    return null;
   }
 
   const openModal = (message) => {
@@ -79,8 +87,119 @@ function Login() {
     }
 
   }
+  const handleSendIdCode = async () => {
+    try {
+      const {name, email} = await findIdForm.validateFields(['name', 'email']);
+      setSendingIdCode(true);
 
-      
+
+      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginId/sendCode', {
+        method: 'post',
+        headers: {'content-type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({name, email}),
+      }
+    );
+
+    const text = await res.text();
+    if(!res.ok) {
+      throw new Error(text || '인증번호 전송에 실패했습니다.'); 
+    } 
+
+    message.success(text ||'인증번호를 이메일로 전송했습니다.');
+    } catch (error) {
+      if (error.errorFields) return; // 폼 validation 에러
+      message.error(error.message || '요청 중 오류가 발생했습니다.');
+    } finally{
+      setSendingIdCode(false);
+    }
+  };
+  const handleVerifyIdCode = async () => {
+       try {
+      const { name, email, code } = await findIdForm.validateFields(['name', 'email', 'code',]);
+      setVerifyingIdCode(true);
+
+      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginId/verifyFindIdCode',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, email, code }),
+        }
+      );
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || '인증번호 확인에 실패했습니다.');
+      }
+
+      setFoundLoginId(text); // 서버에서 loginId 문자열로 내려준다 가정
+      message.success('아이디를 찾았습니다.');
+    } catch (error) {
+      if (error.errorFields) return;
+      message.error(err.message || '요청 중 오류가 발생했습니다.');
+    } finally {
+      setVerifyingIdCode(false);
+    }
+  };
+
+  const handleSendPwCode = async () => {
+    try {
+      const { loginId, email } = await findPwForm.validateFields(['loginId', 'email']); // 유효성 검사임
+      setSendingPwCode(true);
+
+      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginPw/sendCode', {
+        method: 'post',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ loginId, email }),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || '인증번호 전송에 실패했습니다.');
+      }
+    } catch (error) {
+      if (error.errorFields) return;  // 폼 검증 에러면 그냥 무시
+      message.error(err.message || '요청 중 오류가 발생했습니다.');
+    } finally {
+      setSendingPwCode(false);
+    }
+  };
+
+  const handleVerifyPwCode = async () => {
+    try {
+      const { loginId, email, code, newPassword, confirmPassword,} = await findPwForm.validateFields(['loginId', 'email', 'code', 'newPassword', 'confirmPassword',]);
+
+      setVerifyingPwCode(true);
+
+      const res = await fetch(
+        'http://localhost:8081/api/usr/member/findMyLoginPw/verifyCode',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ loginId, email, code, newPassword, confirmPassword,}),
+        }
+      );
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || '비밀번호 변경에 실패했습니다.');
+      }
+
+      message.success(text || '비밀번호가 변경되었습니다.');
+      // 비번 바꾸고 나면 폼/모달 정리
+      findPwForm.resetFields();
+      setIsFindPwModalOpen(false);
+    } catch (error) {
+      if (error.errorFields) return;
+      message.error(err.message || '요청 중 오류가 발생했습니다.');
+    } finally {
+      setVerifyingPwCode(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl">
@@ -123,8 +242,9 @@ function Login() {
             name="remember"
             valuePropName="checked"
             className="mb-0"
-            >
-            <div className="flex items-center justify-between">
+          >
+            <div className="flex items-center w-full">
+              {/* 왼쪽 : 계정 기억하기 */}
               <div className="flex items-center">
                 <Checkbox>
                   <span className="ml-2 block text-sm text-gray-500 dark:text-gray-400">
@@ -132,12 +252,31 @@ function Login() {
                   </span>
                 </Checkbox>
               </div>
-              
-              <div className="text-sm">
-                <a href="#" className="font-medium text-indigo-500 hover:text-indigo-600">아이디, 비밀번호 찾기</a>
+
+              {/* 오른쪽 : 아이디 / 비밀번호 찾기 */}
+              <div className="ml-auto flex items-center text-sm gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsFindIdModalOpen(true)}
+                  className="bg-transparent border-0 p-0 text-indigo-500 hover:text-indigo-600 cursor-pointer"
+                >
+                  아이디 찾기
+                </button>
+
+                <span className="text-gray-400">|</span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFindPwModalOpen(true)}
+                  className="bg-transparent border-0 p-0 text-indigo-500 hover:text-indigo-600 cursor-pointer"
+                >
+                  비밀번호 찾기
+                </button>
               </div>
             </div>
           </Form.Item>
+
+
 
           <Form.Item className="mt-6 mb-0">
 
@@ -152,7 +291,146 @@ function Login() {
             </Button>
           </Form.Item>
         </Form>
+        {/* 아이디 찾기 모달 */}
+        <Modal
+          title="아이디 찾기"
+          open={isFindIdModalOpen}
+          onCancel={() => {
+            setIsFindIdModalOpen(false);
+            setFoundLoginId('');
+            findIdForm.resetFields();
+          }}
+          footer={null}
+        >
+          <Form form={findIdForm} layout="vertical">
+            <Form.Item
+              label="이름"
+              name="name"
+              rules={[{ required: true, message: '이름을 입력해주세요.' }]}
+            >
+              <Input placeholder="가입 당시 이름" />
+            </Form.Item>
 
+            <Form.Item
+              label="이메일"
+              name="email"
+              rules={[
+                { required: true, message: '이메일을 입력해주세요.' },
+                { type: 'email', message: '올바른 이메일 형식이 아닙니다.' },
+              ]}
+            >
+              <Input placeholder="가입한 이메일" />
+            </Form.Item>
+
+            <Form.Item
+              label="이메일 인증번호"
+              name="code"
+              rules={[{ required: true, message: '인증번호를 입력해주세요.' }]}
+            >
+              <div className="flex gap-2">
+                <Input placeholder="인증번호 6자리" />
+                <Button
+                  type="default"
+                  onClick={handleSendIdCode}
+                  loading={sendingIdCode}
+                >
+                  인증번호 보내기
+                </Button>
+              </div>
+            </Form.Item>
+
+            <Button
+              type="primary"
+              block
+              onClick={handleVerifyIdCode}
+              loading={verifyingIdCode}
+            >
+              아이디 찾기
+            </Button>
+
+            {foundLoginId && (
+              <div className="mt-3 text-center">
+                <p>회원님의 아이디는</p>
+                <p className="font-bold text-lg mt-1">{foundLoginId}</p>
+                <p>입니다.</p>
+              </div>
+            )}
+          </Form>
+        </Modal>
+
+        {/* 비밀번호 찾기(재설정) 모달 */}
+        <Modal
+          title="비밀번호 재설정"
+          open={isFindPwModalOpen}
+          onCancel={() => {
+            setIsFindPwModalOpen(false);
+            findPwForm.resetFields();
+          }}
+          footer={null}
+        >
+          <Form form={findPwForm} layout="vertical">
+            <Form.Item
+              label="아이디"
+              name="loginId"
+              rules={[{ required: true, message: '아이디를 입력해주세요.' }]}
+            >
+              <Input placeholder="로그인 아이디" />
+            </Form.Item>
+
+            <Form.Item
+              label="이메일"
+              name="email"
+              rules={[
+                { required: true, message: '이메일을 입력해주세요.' },
+                { type: 'email', message: '올바른 이메일 형식이 아닙니다.' },
+              ]}
+            >
+              <Input placeholder="가입한 이메일" />
+            </Form.Item>
+
+            <Form.Item
+              label="이메일 인증번호"
+              name="code"
+              rules={[{ required: true, message: '인증번호를 입력해주세요.' }]}
+            >
+              <div className="flex gap-2">
+                <Input placeholder="인증번호 6자리" />
+                <Button
+                  type="default"
+                  onClick={handleSendPwCode}
+                  loading={sendingPwCode}
+                >
+                  인증번호 보내기
+                </Button>
+              </div>
+            </Form.Item>
+
+            <Form.Item
+              label="새 비밀번호"
+              name="newPassword"
+              rules={[{ required: true, message: '새 비밀번호를 입력해주세요.' }]}
+            >
+              <Input.Password placeholder="새 비밀번호" />
+            </Form.Item>
+
+            <Form.Item
+              label="새 비밀번호 확인"
+              name="confirmPassword"
+              rules={[{ required: true, message: '비밀번호 확인을 입력해주세요.' }]}
+            >
+              <Input.Password placeholder="새 비밀번호 확인" />
+            </Form.Item>
+
+            <Button
+              type="primary"
+              block
+              onClick={handleVerifyPwCode}
+              loading={verifyingPwCode}
+            >
+              비밀번호 변경
+            </Button>
+          </Form>
+        </Modal>
         <Modal
           title={<span className="text-xl font-bold text-gray-900">알림</span>}
           open={isModalOpen}

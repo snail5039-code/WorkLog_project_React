@@ -1,18 +1,7 @@
 // src/pages/MyPage.jsx
 import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Layout,
-  Card,
-  Typography,
-  Row,
-  Col,
-  Statistic,
-  Table,
-  Tag,
-  Button,
-  message,
-} from 'antd';
+import { Layout, Card, Typography, Row, Col, Statistic, Table, Tag, Button, message, Modal, Input, Form } from 'antd';
 import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
 import { AuthContext } from '../context/AuthContext';
 
@@ -31,6 +20,7 @@ const ACCENT_COLOR = '#2563eb';
 
 function MyPage() {
   const navigate = useNavigate();
+  const [messageApi, contextHolder] = message.useMessage();
   const { isLoginedId } = useContext(AuthContext);
   const isLoggedIn = isLoginedId !== 0;
 
@@ -42,9 +32,15 @@ function MyPage() {
   // 내 업무일지 목록
   const [myWorkLogs, setMyWorkLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [memberInfo, setMemberInfo] = useState(null);
   
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [form] = Form.useForm();
 
   // ✅ 로그인 체크
   useEffect(() => {
@@ -90,10 +86,11 @@ function MyPage() {
         );
         setSummary(data.summary || { totalCount: 0, thisMonthCount: 0});
         setMyWorkLogs(data.myWorkLogs || []);
+        setMemberInfo(data.member || null);
 
       } catch (error) {
         console.error(error);
-        message.error(error.message);
+        messageApi.error(error.message);
       } finally {
         setLoading(false);
       }
@@ -101,6 +98,51 @@ function MyPage() {
 
     fetchData();
   }, [isLoggedIn, page, pageSize]);
+
+  const openProfileModal = () => {
+    if(!memberInfo) {
+      messageApi.error('회원 정보를 불러오지 못했습니다.');
+      return;
+    }  
+    
+    setIsModalOpen(true);
+      form.setFieldsValue({
+        loginId: memberInfo.loginId,
+        loginPw: '',
+        name: memberInfo.name,
+        email: memberInfo.email,
+        address: memberInfo.address,
+      });
+  };
+
+  const handleProfileOk = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const res = await fetch('http://localhost:8081/api/usr/workLog/updateMyInfo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(values),
+      });
+
+      if(!res.ok) {
+        throw new Error('프로필 정보 수정 실패');
+      }
+      messageApi.success('프로필 정보가 수정되었습니다.');
+      setIsModalOpen(false);
+
+    } catch (error) {
+      console.error(error);
+      messageApi.error(error.message);    
+    }
+  }
+  
+  const handleProfileCancel = () => {
+    setIsModalOpen(false);
+  };
 
   // 테이블 컬럼 정의
   const columns = [
@@ -171,6 +213,8 @@ function MyPage() {
   ];
 
   return (
+    <>
+    {contextHolder}
     <Layout
       style={{
         minHeight: '100vh',
@@ -217,10 +261,10 @@ function MyPage() {
               gap: '8px',
             }}
           >
-
+            {/* 개인정보 수정 모달창 열기 */}
             <Button
               type="primary"
-              onClick={() => navigate('/write')}
+              onClick={openProfileModal}
               style={{
                 backgroundColor: ACCENT_COLOR,
                 borderColor: ACCENT_COLOR,
@@ -231,6 +275,7 @@ function MyPage() {
             >
               개인정보 수정
             </Button>
+
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -421,8 +466,69 @@ function MyPage() {
             size="middle"
           />
         </Card>
+
+        {/* 개인정보 수정 모달 */}
+        <Modal
+          title="개인정보 수정"
+          open={isModalOpen}
+          onOk={handleProfileOk}
+          onCancel={handleProfileCancel}
+          confirmLoading={profileLoading}
+          okText="수정 완료"
+          cancelText="취소"  
+        >
+
+          <Form
+            form={form}
+            layout= "vertical"
+            autoComplete="off"
+          >
+            <Form.Item
+              label="아이디"
+              name="loginId"
+            >
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item 
+              label="새 비밀번호"
+              name="loginPw"
+              rules={[]}
+            >
+              <Input.Password placeholder="변경하지 않으려면 비워두세요." />
+            </Form.Item>
+
+            <Form.Item 
+              label="이름"
+              name="name"
+              rules={[{required: true, message: '이름을 입력해주세요.'}]}
+            >
+              <Input/>
+            </Form.Item>
+
+            <Form.Item 
+              label="이메일"
+              name="email"
+              rules={[
+                {required: true, message: '이메일을 입력해주세요.'}
+                , {type: 'email', message: '올바른 이메일 주소를 입력해주세요.'}
+              ]}
+            >
+              <Input/>
+            </Form.Item>
+
+            <Form.Item 
+              label="주소"
+              name="address"
+              rules={[]}
+            >
+              <Input/>
+            </Form.Item>  
+          </Form>  
+        </Modal>
       </Content>
     </Layout>
+    </>
   );
 }
 
