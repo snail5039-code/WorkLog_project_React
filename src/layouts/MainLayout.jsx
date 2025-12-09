@@ -149,7 +149,7 @@ function MainLayout() {
             onToggle={() => toggleMenu('handover')}
           >
             <Link
-              to="/handover/write"
+              to="/handoverWrite"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               인수인계 작성
