@@ -1,9 +1,11 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; 
-import { Button, Input, Form, Checkbox, Modal, message } from 'antd';
-import { AuthContext } from '../context/AuthContext';
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button, Input, Form, Checkbox, Modal, message } from "antd";
+import { AuthContext } from "../context/AuthContext";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider, githubProvider } from "../firebaseConfig";
 
-const LOGIN_REQUIRED_KEY = 'login_required_message';
+const LOGIN_REQUIRED_KEY = "login_required_message";
 
 function Login() {
   const [form] = Form.useForm();
@@ -15,26 +17,71 @@ function Login() {
 
   const [sendingIdCode, setSendingIdCode] = useState(false);
   const [verifyingIdCode, setVerifyingIdCode] = useState(false);
-  const [foundLoginId, setFoundLoginId] = useState('');
+  const [foundLoginId, setFoundLoginId] = useState("");
   const [sendingPwCode, setSendingPwCode] = useState(false);
   const [verifyingPwCode, setVerifyingPwCode] = useState(false);
-    
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [modalMessage, setModalMessage] = useState("");
 
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); 
+  const { isLoginedId, setIsLoginedId } = useContext(AuthContext);
 
-  const {isLoginedId, setIsLoginedId} = useContext(AuthContext);
+  const handleSocialLogin = async (providerType) => {
+    try {
+      const provider =
+        providerType === "google" ? googleProvider : githubProvider;
 
-  useEffect (() => {
-      if (isLoginedId > 0) {
+      // 팝업 로그인
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+
+      console.log("파이어베이스 아이디 토큰: ", idToken);
+
+      const response = await fetch(
+        "http://localhost:8081/api/auth/firebase-login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ idToken, provider: providerType }),
+        }
+      );
+
+      const data = await response.json();
+      console.log("백엔드 응답: ", data);
+
+      if (!response.ok) {
+        message.error(data.error || "소셜 로그인 서버 호출 실패");
+        return;
+      }
+      setIsLoginedId(data);
+      message.success(`${providerType} 계정으로 로그인 성공!`);
+      navigate("/");
+    } catch (error) {
+      if (
+        error.code === "auth/cancelled-popup-request" ||
+        error.code === "auth/popup-closed-by-user"
+      ) {
+        console.log("사용자가 소셜 로그인 팝업을 닫았거나, 요청이 취소됨.");
+        return;
+      }
+
+      console.error("소셜 로그인 오류:", error);
+      message.error("소셜 로그인 중 오류가 발생했습니다.");
+    }
+  };
+
+  useEffect(() => {
+    if (isLoginedId > 0) {
       message.error({
-        content: '로그인은 로그아웃 후 이용 가능합니다.', 
+        content: "로그인은 로그아웃 후 이용 가능합니다.",
         key: LOGIN_REQUIRED_KEY,
         duration: 5,
       });
-      navigate('/');
+      navigate("/");
     }
   }, []);
 
@@ -50,94 +97,102 @@ function Login() {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setModalMessage('');
+    setModalMessage("");
   };
   const onFinish = async (values) => {
-
     const loginData = {
-      loginId : values.loginId,
-      loginPw : values.loginPw,
+      loginId: values.loginId,
+      loginPw: values.loginPw,
     };
 
     try {
-      const response = await fetch('http://localhost:8081/api/usr/member/login', {
-        method: 'post',
-        headers: {'content-type' : 'application/json'},
-        body: JSON.stringify(loginData),
-        credentials: 'include'
-      });
+      const response = await fetch(
+        "http://localhost:8081/api/usr/member/login",
+        {
+          method: "post",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(loginData),
+          credentials: "include",
+        }
+      );
 
-      if(response.ok) {
+      if (response.ok) {
         const data = await response.json();
-        openModal(values.loginId + '님 환영합니다.');
+        openModal(values.loginId + "님 환영합니다.");
         setTimeout(() => {
-          setIsLoginedId(data); 
+          setIsLoginedId(data);
           navigate("/");
         }, 1200);
-
       } else {
         const errorMessage = await response.text();
-        console.error('로그인 실패:', response.status, errorMessage);
-        openModal('아이디 또는 비밀번호가 일치하지 않습니다.')
+        console.error("로그인 실패:", response.status, errorMessage);
+        openModal("아이디 또는 비밀번호가 일치하지 않습니다.");
       }
-
     } catch (error) {
-      console.error('로그인 오류:', error);
-      openModal('서버와 연결을 확인하세요.');
+      console.error("로그인 오류:", error);
+      openModal("서버와 연결을 확인하세요.");
     }
-
-  }
+  };
   const handleSendIdCode = async () => {
     try {
-      const {name, email} = await findIdForm.validateFields(['name', 'email']);
+      const { name, email } = await findIdForm.validateFields([
+        "name",
+        "email",
+      ]);
       setSendingIdCode(true);
 
+      const res = await fetch(
+        "http://localhost:8081/api/usr/member/findMyLoginId/sendCode",
+        {
+          method: "post",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ name, email }),
+        }
+      );
 
-      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginId/sendCode', {
-        method: 'post',
-        headers: {'content-type': 'application/json'},
-        credentials: 'include',
-        body: JSON.stringify({name, email}),
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || "인증번호 전송에 실패했습니다.");
       }
-    );
 
-    const text = await res.text();
-    if(!res.ok) {
-      throw new Error(text || '인증번호 전송에 실패했습니다.'); 
-    } 
-
-    message.success(text ||'인증번호를 이메일로 전송했습니다.');
+      message.success(text || "인증번호를 이메일로 전송했습니다.");
     } catch (error) {
       if (error.errorFields) return; // 폼 validation 에러
-      message.error(error.message || '요청 중 오류가 발생했습니다.');
-    } finally{
+      message.error(error.message || "요청 중 오류가 발생했습니다.");
+    } finally {
       setSendingIdCode(false);
     }
   };
   const handleVerifyIdCode = async () => {
-       try {
-      const { name, email, code } = await findIdForm.validateFields(['name', 'email', 'code',]);
+    try {
+      const { name, email, code } = await findIdForm.validateFields([
+        "name",
+        "email",
+        "code",
+      ]);
       setVerifyingIdCode(true);
 
-      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginId/verifyFindIdCode',
+      const res = await fetch(
+        "http://localhost:8081/api/usr/member/findMyLoginId/verifyFindIdCode",
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ name, email, code }),
         }
       );
 
       const text = await res.text();
       if (!res.ok) {
-        throw new Error(text || '인증번호 확인에 실패했습니다.');
+        throw new Error(text || "인증번호 확인에 실패했습니다.");
       }
 
       setFoundLoginId(text); // 서버에서 loginId 문자열로 내려준다 가정
-      message.success('아이디를 찾았습니다.');
+      message.success("아이디를 찾았습니다.");
     } catch (error) {
       if (error.errorFields) return;
-      message.error(err.message || '요청 중 오류가 발생했습니다.');
+      message.error(err.message || "요청 중 오류가 발생했습니다.");
     } finally {
       setVerifyingIdCode(false);
     }
@@ -145,23 +200,29 @@ function Login() {
 
   const handleSendPwCode = async () => {
     try {
-      const { loginId, email } = await findPwForm.validateFields(['loginId', 'email']); // 유효성 검사임
+      const { loginId, email } = await findPwForm.validateFields([
+        "loginId",
+        "email",
+      ]); // 유효성 검사임
       setSendingPwCode(true);
 
-      const res = await fetch('http://localhost:8081/api/usr/member/findMyLoginPw/sendCode', {
-        method: 'post',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ loginId, email }),
-      });
+      const res = await fetch(
+        "http://localhost:8081/api/usr/member/findMyLoginPw/sendCode",
+        {
+          method: "post",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ loginId, email }),
+        }
+      );
 
       const text = await res.text();
       if (!res.ok) {
-        throw new Error(text || '인증번호 전송에 실패했습니다.');
+        throw new Error(text || "인증번호 전송에 실패했습니다.");
       }
     } catch (error) {
-      if (error.errorFields) return;  // 폼 검증 에러면 그냥 무시
-      message.error(err.message || '요청 중 오류가 발생했습니다.');
+      if (error.errorFields) return; // 폼 검증 에러면 그냥 무시
+      message.error(err.message || "요청 중 오류가 발생했습니다.");
     } finally {
       setSendingPwCode(false);
     }
@@ -169,32 +230,45 @@ function Login() {
 
   const handleVerifyPwCode = async () => {
     try {
-      const { loginId, email, code, newPassword, confirmPassword,} = await findPwForm.validateFields(['loginId', 'email', 'code', 'newPassword', 'confirmPassword',]);
+      const { loginId, email, code, newPassword, confirmPassword } =
+        await findPwForm.validateFields([
+          "loginId",
+          "email",
+          "code",
+          "newPassword",
+          "confirmPassword",
+        ]);
 
       setVerifyingPwCode(true);
 
       const res = await fetch(
-        'http://localhost:8081/api/usr/member/findMyLoginPw/verifyCode',
+        "http://localhost:8081/api/usr/member/findMyLoginPw/verifyCode",
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ loginId, email, code, newPassword, confirmPassword,}),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            loginId,
+            email,
+            code,
+            newPassword,
+            confirmPassword,
+          }),
         }
       );
 
       const text = await res.text();
       if (!res.ok) {
-        throw new Error(text || '비밀번호 변경에 실패했습니다.');
+        throw new Error(text || "비밀번호 변경에 실패했습니다.");
       }
 
-      message.success(text || '비밀번호가 변경되었습니다.');
+      message.success(text || "비밀번호가 변경되었습니다.");
       // 비번 바꾸고 나면 폼/모달 정리
       findPwForm.resetFields();
       setIsFindPwModalOpen(false);
     } catch (error) {
       if (error.errorFields) return;
-      message.error(err.message || '요청 중 오류가 발생했습니다.');
+      message.error(err.message || "요청 중 오류가 발생했습니다.");
     } finally {
       setVerifyingPwCode(false);
     }
@@ -203,46 +277,46 @@ function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-        <h2 className="text-3xl font-bold text-center text-gray-800">Welcome WorkLog</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-800">
+          Welcome WorkLog
+        </h2>
 
-          <Form
-            form={form}
-            name="login_form"
-            initialValues={{ remember: true}}
-            onFinish={onFinish}
-            layout="vertical"
-            className="space-y-4"
-          >
-
+        <Form
+          form={form}
+          name="login_form"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+          layout="vertical"
+          className="space-y-4"
+        >
           <Form.Item
-            label={<span className="text-sm font-medium text-gray-700">LoginId</span>}
+            label={
+              <span className="text-sm font-medium text-gray-700">LoginId</span>
+            }
             name="loginId"
-            rules={[{ required: true, message: '아이디를 입력해주세요.'}]}
+            rules={[{ required: true, message: "아이디를 입력해주세요." }]}
             className="mb-0"
           >
-           <Input
-            placeholder={'아이디를 입력하세요.'}
-            className="w-full"  
-          />
+            <Input placeholder={"아이디를 입력하세요."} className="w-full" />
           </Form.Item>
 
           <Form.Item
-            label={<span className="text-sm font-medium text-gray-700">Password</span>}
+            label={
+              <span className="text-sm font-medium text-gray-700">
+                Password
+              </span>
+            }
             name="loginPw"
-            rules={[{ required: true, message: '비밀번호를 입력해주세요.'}]}
+            rules={[{ required: true, message: "비밀번호를 입력해주세요." }]}
             className="mb-0"
           >
-           <Input.Password
-            placeholder={'비밀번호를 입력하세요.'}
-            className="w-full"  
-          />
+            <Input.Password
+              placeholder={"비밀번호를 입력하세요."}
+              className="w-full"
+            />
           </Form.Item>
 
-          <Form.Item
-            name="remember"
-            valuePropName="checked"
-            className="mb-0"
-          >
+          <Form.Item name="remember" valuePropName="checked" className="mb-0">
             <div className="flex items-center w-full">
               {/* 왼쪽 : 계정 기억하기 */}
               <div className="flex items-center">
@@ -276,10 +350,7 @@ function Login() {
             </div>
           </Form.Item>
 
-
-
           <Form.Item className="mt-6 mb-0">
-
             <Button
               type="primary"
               htmlType="submit"
@@ -297,7 +368,7 @@ function Login() {
           open={isFindIdModalOpen}
           onCancel={() => {
             setIsFindIdModalOpen(false);
-            setFoundLoginId('');
+            setFoundLoginId("");
             findIdForm.resetFields();
           }}
           footer={null}
@@ -306,7 +377,7 @@ function Login() {
             <Form.Item
               label="이름"
               name="name"
-              rules={[{ required: true, message: '이름을 입력해주세요.' }]}
+              rules={[{ required: true, message: "이름을 입력해주세요." }]}
             >
               <Input placeholder="가입 당시 이름" />
             </Form.Item>
@@ -315,8 +386,8 @@ function Login() {
               label="이메일"
               name="email"
               rules={[
-                { required: true, message: '이메일을 입력해주세요.' },
-                { type: 'email', message: '올바른 이메일 형식이 아닙니다.' },
+                { required: true, message: "이메일을 입력해주세요." },
+                { type: "email", message: "올바른 이메일 형식이 아닙니다." },
               ]}
             >
               <Input placeholder="가입한 이메일" />
@@ -325,7 +396,7 @@ function Login() {
             <Form.Item
               label="이메일 인증번호"
               name="code"
-              rules={[{ required: true, message: '인증번호를 입력해주세요.' }]}
+              rules={[{ required: true, message: "인증번호를 입력해주세요." }]}
             >
               <div className="flex gap-2">
                 <Input placeholder="인증번호 6자리" />
@@ -372,7 +443,7 @@ function Login() {
             <Form.Item
               label="아이디"
               name="loginId"
-              rules={[{ required: true, message: '아이디를 입력해주세요.' }]}
+              rules={[{ required: true, message: "아이디를 입력해주세요." }]}
             >
               <Input placeholder="로그인 아이디" />
             </Form.Item>
@@ -381,8 +452,8 @@ function Login() {
               label="이메일"
               name="email"
               rules={[
-                { required: true, message: '이메일을 입력해주세요.' },
-                { type: 'email', message: '올바른 이메일 형식이 아닙니다.' },
+                { required: true, message: "이메일을 입력해주세요." },
+                { type: "email", message: "올바른 이메일 형식이 아닙니다." },
               ]}
             >
               <Input placeholder="가입한 이메일" />
@@ -391,7 +462,7 @@ function Login() {
             <Form.Item
               label="이메일 인증번호"
               name="code"
-              rules={[{ required: true, message: '인증번호를 입력해주세요.' }]}
+              rules={[{ required: true, message: "인증번호를 입력해주세요." }]}
             >
               <div className="flex gap-2">
                 <Input placeholder="인증번호 6자리" />
@@ -408,7 +479,9 @@ function Login() {
             <Form.Item
               label="새 비밀번호"
               name="newPassword"
-              rules={[{ required: true, message: '새 비밀번호를 입력해주세요.' }]}
+              rules={[
+                { required: true, message: "새 비밀번호를 입력해주세요." },
+              ]}
             >
               <Input.Password placeholder="새 비밀번호" />
             </Form.Item>
@@ -416,7 +489,9 @@ function Login() {
             <Form.Item
               label="새 비밀번호 확인"
               name="confirmPassword"
-              rules={[{ required: true, message: '비밀번호 확인을 입력해주세요.' }]}
+              rules={[
+                { required: true, message: "비밀번호 확인을 입력해주세요." },
+              ]}
             >
               <Input.Password placeholder="새 비밀번호 확인" />
             </Form.Item>
@@ -435,43 +510,87 @@ function Login() {
           title={<span className="text-xl font-bold text-gray-900">알림</span>}
           open={isModalOpen}
           onCancel={closeModal}
-
           footer={[
             <Button
-                key="confirm"
-                type="primary"
-                onClick={closeModal}
-                className="bg-indigo-600 hover:!bg-indigo-700 focus:ring-indigo-500"
+              key="confirm"
+              type="primary"
+              onClick={closeModal}
+              className="bg-indigo-600 hover:!bg-indigo-700 focus:ring-indigo-500"
             >
-               확인
-            </Button>
+              확인
+            </Button>,
           ]}
           className="!rounded-lg !shadow-2xl"
         >
-            <p className="text-gray-700 mb-6">{modalMessage}</p>
+          <p className="text-gray-700 mb-6">{modalMessage}</p>
         </Modal>
 
-          <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-[#1E2028] text-gray-500 dark:text-gray-400">Or continue with</span>
-              </div>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
           </div>
-          <button onClick={() => handleSocialLogin('github')} className="w-full btn bg-black text-white border-black">
-            <svg aria-label="GitHub logo" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"></path></svg>
-            Login with GitHub
-          </button>
-          <button onClick={() => handleSocialLogin('google')} className="w-full btn bg-white text-black border-[#e5e5e5]">
-            <svg aria-label="Google logo" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
-            Login with Google
-          </button>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-[#1E2028] text-gray-500 dark:text-gray-400">
+              Or continue with
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => handleSocialLogin("github")}
+          className="w-full btn bg-black text-white border-black"
+        >
+          <svg
+            aria-label="GitHub logo"
+            width="16"
+            height="16"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="white"
+              d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"
+            ></path>
+          </svg>
+          Login with GitHub
+        </button>
+        <button
+          onClick={() => handleSocialLogin("google")}
+          className="w-full btn bg-white text-black border-[#e5e5e5]"
+        >
+          <svg
+            aria-label="Google logo"
+            width="16"
+            height="16"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <g>
+              <path d="m0 0H512V512H0" fill="#fff"></path>
+              <path
+                fill="#34a853"
+                d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"
+              ></path>
+              <path
+                fill="#4285f4"
+                d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"
+              ></path>
+              <path
+                fill="#fbbc02"
+                d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"
+              ></path>
+              <path
+                fill="#ea4335"
+                d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"
+              ></path>
+            </g>
+          </svg>
+          Login with Google
+        </button>
 
         <div className="text-center text-sm text-gray-600">
-            <Link to="/join" className="text-black hover:text-blue-800">
-                회원가입
-            </Link>
+          <Link to="/join" className="text-black hover:text-blue-800">
+            회원가입
+          </Link>
         </div>
       </div>
     </div>

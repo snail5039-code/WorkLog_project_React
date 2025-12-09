@@ -12,7 +12,7 @@
 //   }
 // }, [isLoginedId]);
 
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext({
   isLoginedId: 0,
@@ -20,30 +20,30 @@ export const AuthContext = createContext({
 });
 // 요렇게 세팅해야 계속 값을 저장한다.
 export function AuthProvider({ children }) {
-
   const [isLoginedId, setIsLoginedId] = useState(0);
 
   useEffect(() => {
     const veiwSession = async () => {
       try {
-        const res = await fetch('http://localhost:8081/api/usr/member/session', {
-          method: 'get',
-          credentials: 'include',
-        });
+        const res = await fetch(
+          "http://localhost:8081/api/usr/member/session",
+          {
+            method: "get",
+            credentials: "include",
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           console.log(data);
           setIsLoginedId(data);
         }
       } catch (err) {
-        console.error('세션 조회 실패:', err);
+        console.error("세션 조회 실패:", err);
       }
     };
 
     veiwSession();
   }, []);
-        
-
 
   const contextValue = {
     isLoginedId,
@@ -51,8 +51,6 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
