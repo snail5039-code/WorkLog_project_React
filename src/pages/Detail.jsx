@@ -1,23 +1,32 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button, message, Divider, Card, Layout, Typography, Row, Col } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
-import { AuthContext } from '../context/AuthContext'; 
-import SummaryTable from '../components/summary/SummaryTable';
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  Button,
+  message,
+  Divider,
+  Card,
+  Layout,
+  Typography,
+  Row,
+  Col,
+} from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
+import { AuthContext } from "../context/AuthContext";
+import SummaryTable from "../components/summary/SummaryTable";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
 
-const LOGIN_REQUIRED_KEY = 'login_required_message';
+const LOGIN_REQUIRED_KEY = "login_required_message";
 
 // === 디자인 변수 (Minimal, Professional, Light) ===
-const PAGE_BG = '#f5f5f5';          // 전체 배경 (밝은 회색)
-const CARD_BG = '#ffffff';          // 카드 배경 (흰색)
-const BORDER_COLOR = '#e5e5e5';     // 구분선 및 테두리 색상 (옅은 회색)
-const PRIMARY_TEXT = '#111827';     // 기본 텍스트 색상 (진한 회색)
-const SECONDARY_TEXT = '#6b7280';   // 보조 텍스트 색상 (중간 회색)
-const ACCENT_COLOR = '#2563eb';     // 버튼 및 링크 강조 색상 (파란색)
-const MUTED_BG = '#f9fafb';         // 박스용 연한 배경
+const PAGE_BG = "#f5f5f5"; // 전체 배경 (밝은 회색)
+const CARD_BG = "#ffffff"; // 카드 배경 (흰색)
+const BORDER_COLOR = "#e5e5e5"; // 구분선 및 테두리 색상 (옅은 회색)
+const PRIMARY_TEXT = "#111827"; // 기본 텍스트 색상 (진한 회색)
+const SECONDARY_TEXT = "#6b7280"; // 보조 텍스트 색상 (중간 회색)
+const ACCENT_COLOR = "#2563eb"; // 버튼 및 링크 강조 색상 (파란색)
+const MUTED_BG = "#f9fafb"; // 박스용 연한 배경
 
 // 디자인은 차후 수정 예정
 function Detail() {
@@ -32,7 +41,7 @@ function Detail() {
 
   const [summaryJsonData, setSummaryJsonData] = useState(null);
   const [summaryContentMarkdown, setSummaryContentMarkdown] = useState(null); // JSON이 아닌 원본 내용을 표시하기 위해 유지
-  
+
   // 🚨 [수정된 로직] JSON 문자열에서 불필요한 마크다운 백틱(`)이나 설명 텍스트를 제거하고 순수한 JSON을 추출합니다.
   const extractPureJson = (text) => {
     if (!text) return null;
@@ -48,8 +57,8 @@ function Detail() {
     let pureJsonCandidate = text.substring(startIndex).trim();
 
     // 3. JSON의 끝 인덱스를 찾습니다. (가장 마지막에 나오는 } 또는 ]의 위치를 찾습니다)
-    let lastBrace = pureJsonCandidate.lastIndexOf('}');
-    let lastBracket = pureJsonCandidate.lastIndexOf(']');
+    let lastBrace = pureJsonCandidate.lastIndexOf("}");
+    let lastBracket = pureJsonCandidate.lastIndexOf("]");
     let endIndex = -1;
 
     // 가장 뒤에 나오는 닫는 괄호나 대괄호를 JSON의 끝으로 간주합니다.
@@ -66,7 +75,7 @@ function Detail() {
     } else {
       // 끝을 찾지 못했다면 파싱을 시도하지 않습니다. (JSON이 제대로 닫히지 않음)
       console.warn("JSON 닫는 문자(} 또는 ])를 찾을 수 없습니다.");
-      return null; 
+      return null;
     }
 
     // 5. 최종 추출된 순수한 JSON 후보 문자열을 반환합니다.
@@ -75,66 +84,42 @@ function Detail() {
   // 🚨 [수정된 로직 끝]
 
   useEffect(() => {
-    if (isLoginedId === 0) {
-      message.error({
-        content: "상세보기는 로그인 후 이용 가능합니다.",
-        key: LOGIN_REQUIRED_KEY,
-        duration: 5,
-      });
-      navigate("/login");
-    }
-  }, [isLoginedId, navigate]);
-  
-  if (isLoginedId === 0) {
-    return null;
-  }
-
-  useEffect(() => {
     const API_URL = `http://localhost:8081/api/usr/work/detail/${id}`;
 
     fetch(API_URL)
-      .then(Response => {
-        if (!Response.ok) {
-          throw new Error(`HTTP error! status: ${Response.status}`);
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return Response.json();
+        return response.json();
       })
-      .then(fetchedData => {
+      .then((fetchedData) => {
         setWorkLog(fetchedData);
-        // 파일 넘겨주려고 받는 거임! 백엔드 참고!
         setFileAttaches(fetchedData.fileAttaches || []);
-        
+
         if (fetchedData.summaryContent) {
-          // summaryContent에 들어온 원본 텍스트 저장 
-          setSummaryContentMarkdown(fetchedData.summaryContent); 
-          
-          let contentToParse = fetchedData.summaryContent;
+          // 원본은 그대로 저장 (fallback 표시용)
+          setSummaryContentMarkdown(fetchedData.summaryContent);
 
           try {
-            // ⭐️ [수정된 부분] 순수한 JSON만 추출하는 함수 호출
-            const pureJsonString = extractPureJson(contentToParse);
-          
-            if (pureJsonString) {
-              // JSON.parse가 유효한 단일 객체나 배열을 파싱할 수 있도록 보장해야 함.
-              const parsedJson = JSON.parse(pureJsonString);
-              setSummaryJsonData(parsedJson);
-            } else {
-              console.log("SummaryContent는 순수한 JSON이 아닌 것 같습니다. 일반 텍스트로 처리합니다.");
-              setSummaryJsonData(null); 
-            }
-            
-          } catch (error) {
-            // 파싱 실패 시 초기화 
-            console.error("SummaryContent JSON 파싱 최종 실패:", error);
-            setSummaryJsonData(null); 
+            // 백엔드가 이제 항상 JSON 문자열을 준다고 가정하고 바로 파싱 시도
+            const parsed = JSON.parse(fetchedData.summaryContent);
+            setSummaryJsonData(parsed);
+          } catch (e) {
+            console.warn(
+              "summaryContent JSON 파싱 실패, 일반 텍스트로 처리:",
+              e
+            );
+            setSummaryJsonData(null); // 테이블 안 그리고, 밑에 pre 텍스트만 보여주게
           }
         } else {
           setSummaryJsonData(null);
           setSummaryContentMarkdown(null);
         }
+
         setLoading(false);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("데이터 불러오기 실패:", error);
         setLoading(false);
       });
@@ -143,13 +128,13 @@ function Detail() {
   // 렌더링 오류 방지 코드임 (밝은 테마로 변경)
   if (loading) {
     return (
-      <Layout style={{ minHeight: '100vh', backgroundColor: PAGE_BG }}>
+      <Layout style={{ minHeight: "100vh", backgroundColor: PAGE_BG }}>
         <Content
           style={{
             maxWidth: 600,
-            margin: '0 auto',
-            paddingTop: '120px',
-            textAlign: 'center',
+            margin: "0 auto",
+            paddingTop: "120px",
+            textAlign: "center",
           }}
         >
           <Card
@@ -157,7 +142,7 @@ function Detail() {
               backgroundColor: CARD_BG,
               borderColor: BORDER_COLOR,
               borderRadius: 16,
-              boxShadow: '0 10px 25px rgba(15, 23, 42, 0.06)',
+              boxShadow: "0 10px 25px rgba(15, 23, 42, 0.06)",
             }}
           >
             <Text style={{ color: SECONDARY_TEXT, fontSize: 15 }}>
@@ -171,13 +156,13 @@ function Detail() {
 
   if (!workLog || Object.keys(workLog).length === 0) {
     return (
-      <Layout style={{ minHeight: '100vh', backgroundColor: PAGE_BG }}>
+      <Layout style={{ minHeight: "100vh", backgroundColor: PAGE_BG }}>
         <Content
           style={{
             maxWidth: 600,
-            margin: '0 auto',
-            paddingTop: '120px',
-            textAlign: 'center',
+            margin: "0 auto",
+            paddingTop: "120px",
+            textAlign: "center",
           }}
         >
           <Card
@@ -185,7 +170,7 @@ function Detail() {
               backgroundColor: CARD_BG,
               borderColor: BORDER_COLOR,
               borderRadius: 16,
-              boxShadow: '0 10px 25px rgba(15, 23, 42, 0.06)',
+              boxShadow: "0 10px 25px rgba(15, 23, 42, 0.06)",
             }}
           >
             <Text style={{ color: SECONDARY_TEXT, fontSize: 15 }}>
@@ -198,26 +183,26 @@ function Detail() {
   }
 
   const handleDownloadTemplate = () => {
-    const templateId = workLog.templateId || 'TPL1';
+    const templateId = workLog.templateId || "TPL1";
     const url = `http://localhost:8081/api/worklogs/${id}/download/${templateId}`;
-    window.open(url, '_blank');
-  };  
+    window.open(url, "_blank");
+  };
 
   return (
     // 전체 레이아웃 (밝은 배경 적용)
     <Layout
       style={{
-        minHeight: '100vh',
+        minHeight: "100vh",
         backgroundColor: PAGE_BG,
-        padding: '32px 16px',
+        padding: "32px 16px",
       }}
     >
       {/* 2. 메인 콘텐츠 영역 */}
       <Content
         style={{
-          maxWidth: '1100px',
-          margin: '0 auto',
-          width: '100%',
+          maxWidth: "1100px",
+          margin: "0 auto",
+          width: "100%",
         }}
       >
         <Card
@@ -226,9 +211,9 @@ function Detail() {
             borderColor: BORDER_COLOR,
             color: PRIMARY_TEXT,
             borderRadius: 16,
-            boxShadow: '0 18px 40px rgba(15, 23, 42, 0.08)',
+            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
           }}
-          styles={{ body: { padding: '32px' } }}
+          styles={{ body: { padding: "32px" } }}
           variant="outlined"
         >
           {/* 제목 영역 */}
@@ -238,17 +223,17 @@ function Detail() {
               color: PRIMARY_TEXT,
               marginTop: 0,
               borderBottom: `1px solid ${BORDER_COLOR}`,
-              paddingBottom: '16px',
-              marginBottom: '24px',
+              paddingBottom: "16px",
+              marginBottom: "24px",
               fontWeight: 600,
-              letterSpacing: '-0.02em',
+              letterSpacing: "-0.02em",
             }}
           >
             <span
               style={{
                 color: SECONDARY_TEXT,
-                fontSize: '0.85em',
-                marginRight: '10px',
+                fontSize: "0.85em",
+                marginRight: "10px",
               }}
             >
               제목
@@ -257,9 +242,9 @@ function Detail() {
           </Title>
 
           {/* 메타 정보 (작성자, 작성일) - DB 원본 */}
-          <Row gutter={[16, 16]} style={{ marginBottom: '28px' }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: "28px" }}>
             <Col xs={24} sm={12}>
-              <Text style={{ color: SECONDARY_TEXT, fontSize: '14px' }}>
+              <Text style={{ color: SECONDARY_TEXT, fontSize: "14px" }}>
                 작성자
               </Text>
               <div>
@@ -276,7 +261,7 @@ function Detail() {
               </div>
             </Col>
             <Col xs={24} sm={12}>
-              <Text style={{ color: SECONDARY_TEXT, fontSize: '14px' }}>
+              <Text style={{ color: SECONDARY_TEXT, fontSize: "14px" }}>
                 작성일
               </Text>
               <div>
@@ -300,21 +285,21 @@ function Detail() {
             style={{
               color: SECONDARY_TEXT,
               borderColor: BORDER_COLOR,
-              margin: '32px 0 16px 0',
-              fontSize: '15px',
+              margin: "32px 0 16px 0",
+              fontSize: "15px",
             }}
           >
             주요 업무 내용
           </Divider>
           <div
             style={{
-              whiteSpace: 'pre-wrap',
+              whiteSpace: "pre-wrap",
               color: PRIMARY_TEXT,
               lineHeight: 1.8,
-              fontSize: '15px',
+              fontSize: "15px",
               backgroundColor: MUTED_BG,
               borderRadius: 12,
-              padding: '16px 18px',
+              padding: "16px 18px",
               border: `1px solid ${BORDER_COLOR}`,
             }}
           >
@@ -327,8 +312,8 @@ function Detail() {
             style={{
               color: SECONDARY_TEXT,
               borderColor: BORDER_COLOR,
-              margin: '40px 0 16px 0',
-              fontSize: '15px',
+              margin: "40px 0 16px 0",
+              fontSize: "15px",
             }}
           >
             보고서 다운로드
@@ -336,22 +321,22 @@ function Detail() {
 
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-              marginBottom: '12px',
-              padding: '12px 16px',
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: "12px",
+              padding: "12px 16px",
               borderRadius: 12,
               backgroundColor: MUTED_BG,
               border: `1px dashed ${BORDER_COLOR}`,
             }}
           >
-            <Text style={{ color: SECONDARY_TEXT, fontSize: '13px' }}>
+            <Text style={{ color: SECONDARY_TEXT, fontSize: "13px" }}>
               선택한 템플릿(
               <span style={{ fontWeight: 600, color: PRIMARY_TEXT }}>
-                {workLog.templateId || 'TPL1'}
+                {workLog.templateId || "TPL1"}
               </span>
               ) 기준으로 AI 요약 내용을 채운 Word 파일(DOCX)을 다운로드합니다.
             </Text>
@@ -362,13 +347,13 @@ function Detail() {
               style={{
                 backgroundColor: ACCENT_COLOR,
                 borderColor: ACCENT_COLOR,
-                height: '40px',
-                padding: '0 18px',
+                height: "40px",
+                padding: "0 18px",
                 fontWeight: 500,
-                fontSize: '14px',
+                fontSize: "14px",
               }}
             >
-              {(workLog.templateId || 'TPL1') + ' DOCX 다운로드'}
+              {(workLog.templateId || "TPL1") + " DOCX 다운로드"}
             </Button>
           </div>
 
@@ -378,22 +363,22 @@ function Detail() {
             style={{
               color: SECONDARY_TEXT,
               borderColor: BORDER_COLOR,
-              margin: '40px 0 16px 0',
-              fontSize: '15px',
+              margin: "40px 0 16px 0",
+              fontSize: "15px",
             }}
           >
             비고
           </Divider>
           <div
             style={{
-              whiteSpace: 'pre-wrap',
+              whiteSpace: "pre-wrap",
               color: PRIMARY_TEXT,
               lineHeight: 1.8,
-              fontSize: '15px',
-              minHeight: '50px',
+              fontSize: "15px",
+              minHeight: "50px",
               backgroundColor: MUTED_BG,
               borderRadius: 12,
-              padding: '12px 14px',
+              padding: "12px 14px",
               border: `1px solid ${BORDER_COLOR}`,
             }}
           >
@@ -412,8 +397,8 @@ function Detail() {
                 style={{
                   color: SECONDARY_TEXT,
                   borderColor: BORDER_COLOR,
-                  margin: '40px 0 16px 0',
-                  fontSize: '15px',
+                  margin: "40px 0 16px 0",
+                  fontSize: "15px",
                 }}
               >
                 AI 분석 요약 내용
@@ -423,17 +408,17 @@ function Detail() {
               {!summaryJsonData && (
                 <pre
                   style={{
-                    whiteSpace: 'pre-wrap',
+                    whiteSpace: "pre-wrap",
                     color: SECONDARY_TEXT,
                     backgroundColor: MUTED_BG,
-                    padding: '15px',
-                    borderRadius: '8px',
+                    padding: "15px",
+                    borderRadius: "8px",
                     border: `1px solid ${BORDER_COLOR}`,
                     fontSize: 13,
                   }}
                 >
                   AI 보고서 파싱 실패 또는 JSON 형식이 아님. 원본 내용:
-                  {'\n\n'}
+                  {"\n\n"}
                   {summaryContentMarkdown}
                 </pre>
               )}
@@ -454,20 +439,20 @@ function Detail() {
                   }
                   variant="outlined"
                   style={{
-                    backgroundColor: '#ffffff',
+                    backgroundColor: "#ffffff",
                     borderColor: BORDER_COLOR,
                     borderRadius: 12,
                   }}
                   styles={{
                     header: {
                       borderBottom: `1px solid ${BORDER_COLOR}`,
-                      backgroundColor: '#f9fafb',
+                      backgroundColor: "#f9fafb",
                     },
                   }}
                 >
                   <SummaryTable
                     summaryJson={summaryJsonData}
-                    templateId={workLog.templateId || 'TPL1'}
+                    templateId={workLog.templateId || "TPL1"}
                     primaryText={PRIMARY_TEXT}
                     secondaryText={SECONDARY_TEXT}
                     borderColor={BORDER_COLOR}
@@ -478,17 +463,17 @@ function Detail() {
           )}
 
           {/* 하단: 수정하기 버튼만 */}
-          <div style={{ marginTop: '40px', textAlign: 'right' }}>
+          <div style={{ marginTop: "40px", textAlign: "right" }}>
             <Link to={`/Modify/${id}`}>
               <Button
                 type="primary"
                 style={{
                   backgroundColor: ACCENT_COLOR,
                   borderColor: ACCENT_COLOR,
-                  height: '44px',
-                  padding: '0 24px',
+                  height: "44px",
+                  padding: "0 24px",
                   fontWeight: 500,
-                  fontSize: '16px',
+                  fontSize: "16px",
                   borderRadius: 999,
                 }}
               >

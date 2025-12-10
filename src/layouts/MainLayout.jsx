@@ -79,7 +79,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-800 ">
       
       <MainHeader />   {/* ✅ 여기서도 같은 헤더 사용 */}
 
@@ -155,7 +155,7 @@ function MainLayout() {
               인수인계 작성
             </Link>
             <Link
-              to="/list?boardId=7"
+              to="/handoverList"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               인수인계 목록

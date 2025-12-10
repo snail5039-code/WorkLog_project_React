@@ -1,53 +1,46 @@
+/* 1. Tailwind + daisyUI (쓰고 있다면) */
 @import "tailwindcss";
 @plugin "daisyui";
 
-
+/* 2. 폰트 설정 */
 @font-face {
-    font-family: 'GowoonDodum';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/GowunDodum-Regular.woff') format('woff');
-    font-weight: normal;
+  font-family: 'BookkMyungjo';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Bd.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+    font-family: 'DaeguDongseongRo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2511-1@1.0/DaeguDongseongro-Regular.woff2') format('woff2');
+    font-weight: 400;
     font-display: swap;
 }
 
-/* 몰라서 걍 가져옴 */
+/* Tailwind 기본 body 폰트보다 뒤에, 그리고 확실히 이기게 !important */
+html, body {
+  font-family: 'DaeguDongseongRo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* 3. 나머지 커스텀 CSS */
+
 .toastui-editor-toolbar-icons[data-tooltip="오늘 날짜 삽입"] {
-    /* 기본 아이콘 이미지 숨기기 */
-    background-image: none !important; 
-    /* 텍스트 보이게 처리 */
-    text-indent: 0 !important; 
-    /* 텍스트 색상 및 패딩 설정 (선택 사항) */
-    color: #38a169; /* 진한 녹색 */
-    padding: 0 8px;
-    line-height: 28px;
-    font-weight: bold;
+  background-image: none !important;
+  text-indent: 0 !important;
+  color: #38a169;
+  padding: 0 8px;
+  line-height: 28px;
+  font-weight: bold;
 }
+
 a:link {
-  color: #1f2937; /* 원하는 기본 색상 (예: text-gray-800) */
+  color: #1f2937;
 }
-
-/* 방문한 링크 색상 */
 a:visited {
-  /* :visited 링크 색상을 기본 링크 색상과 동일하게 설정하여 '씹히는' 것을 방지 */
-  color: #1f2937; /* List 컴포넌트에서 사용하는 text-gray-800 색상 값 */
+  color: #1f2937;
 }
-
-/* 마우스 오버 시 색상 */
 a:hover {
-  color: #4f46e5; /* List 컴포넌트에서 사용하는 hover:text-indigo-600 색상 값 */
-}
-
-/* 액티브 상태 색상 */
-a:active {
   color: #4f46e5;
 }
-
-@font-face {
-    font-family: 'BookkMyungjo';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Bd.woff2') format('woff2');
-    font-weight: 700;
-    font-display: swap;
-}
-
-body {
-    font-family: 'BookkMyungjo';
+a:active {
+  color: #4f46e5;
 }

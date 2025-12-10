@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Logout from './pages/Logout';
 import MyPage from './pages/MyPage';
 import HandoverWrite from './pages/HandoverWrite';
+import HandoverList from './pages/HandoverList';
 
 // ✅ 새로 만들 레이아웃
 import MainLayout from './layouts/MainLayout';
@@ -36,6 +37,7 @@ function App(){
             <Route path="/list" element={<List />} />
             <Route path="/write" element={<Write />} />
             <Route path="/handoverWrite" element={<HandoverWrite />} />
+            <Route path="/handoverList" element={<HandoverList />} />
             <Route path="/detail/:id" element={<Detail />} />
             <Route path="/modify/:id" element={<Modify />} />
             <Route path="/mypage" element={<MyPage />} />

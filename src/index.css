@@ -8,6 +8,6 @@
     font-display: swap;
 }
 
-html {
-    font-family: 'BookkMyungjo';
+html, body {
+  font-family: 'BookkMyungjo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
