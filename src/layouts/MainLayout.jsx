@@ -129,10 +129,22 @@ function MainLayout() {
               일일업무일지
             </Link>
             <Link
+              to="/weeklyWrite"
+              className="block px-3 py-2 rounded-md hover:bg-gray-100"
+            >
+              주간업무일지 작성
+            </Link>
+            <Link
               to="/list?boardId=5"
               className="block px-3 py-2 rounded-md hover:bg-gray-100"
             >
               주간업무일지
+            </Link>
+            <Link
+              to="/MonthlyWrite"
+              className="block px-3 py-2 rounded-md hover:bg-gray-100"
+            >
+              월간업무일지 작성
             </Link>
             <Link
               to="/list?boardId=6"

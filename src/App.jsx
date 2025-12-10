@@ -15,6 +15,8 @@ import Logout from './pages/Logout';
 import MyPage from './pages/MyPage';
 import HandoverWrite from './pages/HandoverWrite';
 import HandoverList from './pages/HandoverList';
+import WeeklyWrite from './pages/WeeklyWrite';
+import MonthlyWrite from './pages/MonthlyWrite';
 
 // ✅ 새로 만들 레이아웃
 import MainLayout from './layouts/MainLayout';
@@ -38,6 +40,8 @@ function App(){
             <Route path="/write" element={<Write />} />
             <Route path="/handoverWrite" element={<HandoverWrite />} />
             <Route path="/handoverList" element={<HandoverList />} />
+            <Route path="/weeklyWrite" element={<WeeklyWrite />} />
+            <Route path="/monthlyWrite" element={<MonthlyWrite />} />
             <Route path="/detail/:id" element={<Detail />} />
             <Route path="/modify/:id" element={<Modify />} />
             <Route path="/mypage" element={<MyPage />} />

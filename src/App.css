@@ -16,9 +16,23 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'SandollSamlipHobbangOutline';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts-20-12@1.0/SDSamliphopangche_Outline.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'SamlipCreamyWhite';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-4@1.0/TTSamlipCreamyWhiteR.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 /* Tailwind 기본 body 폰트보다 뒤에, 그리고 확실히 이기게 !important */
 html, body {
-  font-family: 'DaeguDongseongRo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'SandollSamlipHobbangOutline', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 /* 3. 나머지 커스텀 CSS */
