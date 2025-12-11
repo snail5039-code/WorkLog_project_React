@@ -1,10 +1,9 @@
 // src/components/summary/SummaryTable.jsx
 import React from 'react';
-import { List, Row, Col, Typography } from 'antd';
+import { Row, Col, Typography } from 'antd'; // ✅ List 제거
 import { FIELD_ORDER, FIELD_LABELS } from '../../config/templateSummaryConfig';
 
 const { Text, Title } = Typography;
-
 
 // 🔹 배열 형태 데이터를 표로 그려주는 NestedTable
 const NestedTable = ({ data, primaryText, secondaryText, borderColor }) => {
@@ -84,12 +83,11 @@ function SummaryTable({
   // ⚙️ 2) 한글 라벨 맵
   const labelMap = FIELD_LABELS[tplId] || {};
 
-  // ⚙️ 3) 순서대로 돌면서 리스트 데이터 만들기
+  // ⚙️ 3) 순서대로 돌면서 렌더링용 데이터 만들기
   const dataList = order
     .map((key) => {
       const value = summaryJson[key];
 
-      // 값 없는 건 스킵
       if (value === undefined || value === null || value === '') return null;
 
       let displayValue;
@@ -118,7 +116,7 @@ function SummaryTable({
 
       return {
         key,
-        label: labelMap[key] || key, // 영문 키 대신 한글 라벨 사용
+        label: labelMap[key] || key,
         displayValue,
         isTable,
       };
@@ -126,12 +124,16 @@ function SummaryTable({
     .filter(Boolean);
 
   return (
-    <List
-      size="large"
-      dataSource={dataList}
-      style={{ backgroundColor: 'transparent', color: primaryText, fontSize: '15px' }}
-      renderItem={(item) => (
-        <List.Item
+    <div
+      style={{
+        backgroundColor: 'transparent',
+        color: primaryText,
+        fontSize: '15px',
+      }}
+    >
+      {dataList.map((item) => (
+        <div
+          key={item.key}
           style={{
             borderBottom: `1px solid ${borderColor}`,
             padding: item.isTable ? '20px 0' : '12px 0',
@@ -165,9 +167,9 @@ function SummaryTable({
               )}
             </Col>
           </Row>
-        </List.Item>
-      )}
-    />
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -26,7 +26,7 @@ function Login() {
 
   const navigate = useNavigate();
 
-  const { isLoginedId, setIsLoginedId } = useContext(AuthContext);
+  const { isLoginedId, setIsLoginedId, authLoaded } = useContext(AuthContext);
 
   const handleSocialLogin = async (providerType) => {
     try {
@@ -84,7 +84,9 @@ function Login() {
       navigate("/");
     }
   }, []);
-
+  if (!authLoaded) {
+    return null;
+  }
   // ✅ 이미 로그인 상태면 아무것도 렌더하지 않음
   if (isLoginedId > 0) {
     return null;
@@ -276,7 +278,26 @@ function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl relative">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="absolute"
+          style={{
+            top: 16,
+            right: 16,
+            padding: "4px 12px",
+            borderRadius: "999px",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#ffffff",
+            color: "#000000", // ← 글자 완전 검정
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          홈으로
+        </button>
         <h2 className="text-3xl font-bold text-center text-gray-800">
           Welcome WorkLog
         </h2>

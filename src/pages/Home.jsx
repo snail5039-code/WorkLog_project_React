@@ -81,17 +81,17 @@ function Home() {
   const workLogCards = [
     {
       id: 1,
-      title: "최근 작성한 업무일지",
+      title: "최근 작성한 일일업무일지",
       image: under1, // 로컬 이미지
       linkText: "업무일지 보러가기",
-      linkTo: "/list",
+      linkTo: "/list?boardId=4",
     },
     {
       id: 2,
-      title: "이번 주 업무 기록",
+      title: "주간 업무 기록",
       image: under2,
-      linkText: "이번 주 기록 보기",
-      linkTo: "/list?range=week",
+      linkText: "주간 기록 보기",
+      linkTo: "/list?boardId=5",
     },
     {
       id: 3,
@@ -112,7 +112,7 @@ function Home() {
       title: "AI 요약 히스토리",
       image: under5,
       linkText: "요약 히스토리",
-      linkTo: "/list?type=summary",
+      linkTo: "/mypage",
     },
     {
       id: 6,
@@ -230,7 +230,7 @@ function Home() {
                 </p>
               </div>
               <Link
-                to="/support"
+                to="/customerCenter"
                 className="mt-4 inline-flex items-center text-sm text-teal-700 font-semibold hover:underline self-end"
               >
                 문의하러 가기 →
@@ -324,7 +324,7 @@ function Home() {
                 지금 바로 WorkLog를 시작해 보세요.{" "}
               </span>
               <Link
-                to="/login"
+                to="/write"
                 className="font-semibold underline underline-offset-2"
               >
                 시작하기

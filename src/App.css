@@ -1,7 +1,19 @@
 /* 1. Tailwind + daisyUI (쓰고 있다면) */
 @import "tailwindcss";
 @plugin "daisyui";
+:root {
+  --ant-font-family: 'SandollSamlipHobbangOutline',
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
+/* 혹시 모를 override용으로 한 번 더 쐐기 박기 */
+.ant-card,
+.ant-table,
+.ant-typography,
+.ant-btn,
+.ant-pagination {
+  font-family: var(--ant-font-family) !important;
+}
 /* 2. 폰트 설정 */
 @font-face {
   font-family: 'BookkMyungjo';

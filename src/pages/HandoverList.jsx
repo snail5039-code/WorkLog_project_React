@@ -1,6 +1,10 @@
 // src/pages/HandoverList.jsx
-import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, message, Tag } from 'antd';
+import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Table, Button, message } from 'antd';
+import { AuthContext } from "../context/AuthContext";
+
+const LOGIN_REQUIRED_KEY = "login_required_message";
 
 function HandoverList() {
   const [items, setItems] = useState([]);
@@ -8,7 +12,22 @@ function HandoverList() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
-
+  const { isLoginedId, authLoaded } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+      if (!authLoaded) return; // 세션 확인 전에는 아무것도 안 함
+  
+      if (isLoginedId === 0) {
+        message.error({
+          content: "게시글 보기는 로그인 후 이용 가능합니다.",
+          key: LOGIN_REQUIRED_KEY,
+          duration: 5,
+        });
+        navigate("/login");
+      }
+    }, [authLoaded, isLoginedId, navigate]);
+  
   // 🔹 목록 불러오기
   const fetchList = async (pageNo = 1, size = 10) => {
     try {
@@ -37,8 +56,10 @@ function HandoverList() {
   };
 
   useEffect(() => {
+    if (!authLoaded) return;
+    if (isLoginedId === 0) return;
     fetchList(page, pageSize);
-  }, [page, pageSize]);
+  }, [authLoaded, isLoginedId, page, pageSize]);
 
   // 🔹 개별 행 다운로드 (id로 다운로드)
   const handleDownload = async (record) => {
@@ -148,7 +169,7 @@ function HandoverList() {
       }}
     >
       <Card
-        title="인수인계 내역"
+        title="인수인계 게시판 목록"
         variant="outlined"
         style={{
           width: '100%',

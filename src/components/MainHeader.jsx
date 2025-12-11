@@ -48,11 +48,11 @@ function MainHeader() {
           직접 사용하기
         </NavLink>
 
-        <NavLink to="/detail/123" className={menuLinkClass}>
+        <NavLink to="/coming" className={menuLinkClass}>
           부가적인 기능들
         </NavLink>
 
-        <NavLink to="/support" className={menuLinkClass}>
+        <NavLink to="/customerCenter" className={menuLinkClass}>
           고객센터
         </NavLink>
       </nav>

@@ -9,6 +9,7 @@ import {
   Typography,
   Row,
   Col,
+  Modal,
 } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { AuthContext } from "../context/AuthContext";
@@ -31,8 +32,7 @@ const MUTED_BG = "#f9fafb"; // 박스용 연한 배경
 // 디자인은 차후 수정 예정
 function Detail() {
   const navigate = useNavigate();
-
-  const { isLoginedId } = useContext(AuthContext);
+  const { isLoginedId, authLoaded } = useContext(AuthContext);
 
   const { id } = useParams();
   const [workLog, setWorkLog] = useState(null);
@@ -41,6 +41,24 @@ function Detail() {
 
   const [summaryJsonData, setSummaryJsonData] = useState(null);
   const [summaryContentMarkdown, setSummaryContentMarkdown] = useState(null); // JSON이 아닌 원본 내용을 표시하기 위해 유지
+
+  const boardId = workLog?.boardId; //옵셔널 체이닝 문법이라 ? 붙임
+  const isDailyBoard = boardId === 4;
+  const isWorkLogBoard = boardId === 4 || boardId === 5 || boardId === 6;
+  const isOwner = isLoginedId !== 0 && workLog?.memberId === isLoginedId;
+
+  useEffect(() => {
+    if (!authLoaded) return; // 세션 확인 전에는 아무것도 안 함
+
+    if (isLoginedId === 0) {
+      message.error({
+        content: "게시글 보기는 로그인 후 이용 가능합니다.",
+        key: LOGIN_REQUIRED_KEY,
+        duration: 5,
+      });
+      navigate("/login");
+    }
+  }, [authLoaded, isLoginedId, navigate]);
 
   // 🚨 [수정된 로직] JSON 문자열에서 불필요한 마크다운 백틱(`)이나 설명 텍스트를 제거하고 순수한 JSON을 추출합니다.
   const extractPureJson = (text) => {
@@ -84,25 +102,30 @@ function Detail() {
   // 🚨 [수정된 로직 끝]
 
   useEffect(() => {
+    if (!authLoaded) return;
+    if (!isLoginedId) return;
+
     const API_URL = `http://localhost:8081/api/usr/work/detail/${id}`;
 
-    fetch(API_URL)
-      .then((response) => {
+    async function fetchDetail() {
+      try {
+        setLoading(true);
+        const response = await fetch(API_URL, {
+          credentials: "include",
+        });
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then((fetchedData) => {
+
+        const fetchedData = await response.json();
         setWorkLog(fetchedData);
         setFileAttaches(fetchedData.fileAttaches || []);
 
+        // ✅ 요약 파싱
         if (fetchedData.summaryContent) {
-          // 원본은 그대로 저장 (fallback 표시용)
           setSummaryContentMarkdown(fetchedData.summaryContent);
-
           try {
-            // 백엔드가 이제 항상 JSON 문자열을 준다고 가정하고 바로 파싱 시도
             const parsed = JSON.parse(fetchedData.summaryContent);
             setSummaryJsonData(parsed);
           } catch (e) {
@@ -110,20 +133,66 @@ function Detail() {
               "summaryContent JSON 파싱 실패, 일반 텍스트로 처리:",
               e
             );
-            setSummaryJsonData(null); // 테이블 안 그리고, 밑에 pre 텍스트만 보여주게
+            setSummaryJsonData(null);
           }
         } else {
           setSummaryJsonData(null);
           setSummaryContentMarkdown(null);
         }
-
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("데이터 불러오기 실패:", error);
+         message.error("게시글을 불러오는 중 오류가 발생했습니다.");
+      } finally {
         setLoading(false);
-      });
-  }, [id]);
+      }
+    }
+
+    fetchDetail();
+  }, [authLoaded, isLoginedId, id]);
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: "게시글 삭제",
+      content: "정말 이 게시글을 삭제하시겠습니까?",
+      okText: "삭제",
+      cancelText: "취소",
+      okButtonProps: {
+        style: {
+          backgroundColor: ACCENT_COLOR,
+          borderColor: ACCENT_COLOR,
+        },
+      },
+      cancelButtonProps: {
+        style: {
+          borderRadius: 999,
+        },
+      },
+      async onOk() {
+        try {
+          const res = await fetch(`http://localhost:8081/api/usr/work/${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error("삭제에 실패했습니다.");
+          }
+
+          message.success("게시글이 삭제되었습니다.");
+
+          // 삭제 후 이동: 같은 게시판 목록으로
+          if (workLog.boardId) {
+            navigate(`/list?boardId=${workLog.boardId}`);
+          } else {
+            navigate("/list");
+          }
+        } catch (error) {
+          console.error(error);
+          message.error(error.message || "삭제 중 오류가 발생했습니다.");
+        }
+      },
+    });
+  };
 
   // 렌더링 오류 방지 코드임 (밝은 테마로 변경)
   if (loading) {
@@ -280,17 +349,19 @@ function Detail() {
           </Row>
 
           {/* 주요 업무 내용 */}
-          <Divider
-            titlePlacement="start"
-            style={{
-              color: SECONDARY_TEXT,
-              borderColor: BORDER_COLOR,
-              margin: "32px 0 16px 0",
-              fontSize: "15px",
-            }}
-          >
-            주요 업무 내용
-          </Divider>
+          {isWorkLogBoard && (
+            <Divider
+              titlePlacement="start"
+              style={{
+                color: SECONDARY_TEXT,
+                borderColor: BORDER_COLOR,
+                margin: "32px 0 16px 0",
+                fontSize: "15px",
+              }}
+            >
+              주요 업무 내용
+            </Divider>
+          )}
           <div
             style={{
               whiteSpace: "pre-wrap",
@@ -307,90 +378,99 @@ function Detail() {
           </div>
 
           {/* 📄 AI 요약 DOCX 다운로드 (첨부파일 리스트는 제거) */}
-          <Divider
-            titlePlacement="start"
-            style={{
-              color: SECONDARY_TEXT,
-              borderColor: BORDER_COLOR,
-              margin: "40px 0 16px 0",
-              fontSize: "15px",
-            }}
-          >
-            보고서 다운로드
-          </Divider>
+          {isWorkLogBoard && (
+            <>
+              <Divider
+                titlePlacement="start"
+                style={{
+                  color: SECONDARY_TEXT,
+                  borderColor: BORDER_COLOR,
+                  margin: "40px 0 16px 0",
+                  fontSize: "15px",
+                }}
+              >
+                보고서 다운로드
+              </Divider>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginBottom: "12px",
-              padding: "12px 16px",
-              borderRadius: 12,
-              backgroundColor: MUTED_BG,
-              border: `1px dashed ${BORDER_COLOR}`,
-            }}
-          >
-            <Text style={{ color: SECONDARY_TEXT, fontSize: "13px" }}>
-              선택한 템플릿(
-              <span style={{ fontWeight: 600, color: PRIMARY_TEXT }}>
-                {workLog.templateId || "TPL1"}
-              </span>
-              ) 기준으로 AI 요약 내용을 채운 Word 파일(DOCX)을 다운로드합니다.
-            </Text>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadTemplate}
-              style={{
-                backgroundColor: ACCENT_COLOR,
-                borderColor: ACCENT_COLOR,
-                height: "40px",
-                padding: "0 18px",
-                fontWeight: 500,
-                fontSize: "14px",
-              }}
-            >
-              {(workLog.templateId || "TPL1") + " DOCX 다운로드"}
-            </Button>
-          </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  marginBottom: "12px",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  backgroundColor: MUTED_BG,
+                  border: `1px dashed ${BORDER_COLOR}`,
+                }}
+              >
+                <Text style={{ color: SECONDARY_TEXT, fontSize: "13px" }}>
+                  선택한 템플릿(
+                  <span style={{ fontWeight: 600, color: PRIMARY_TEXT }}>
+                    {workLog.templateId || "TPL1"}
+                  </span>
+                  ) 기준으로 AI 요약 내용을 채운 Word 파일(DOCX)을
+                  다운로드합니다.
+                </Text>
 
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadTemplate}
+                  style={{
+                    backgroundColor: ACCENT_COLOR,
+                    borderColor: ACCENT_COLOR,
+                    height: "40px",
+                    padding: "0 18px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                  }}
+                >
+                  {(workLog.templateId || "TPL1") + " DOCX 다운로드"}
+                </Button>
+              </div>
+            </>
+          )}
           {/* 비고 */}
-          <Divider
-            titlePlacement="start"
-            style={{
-              color: SECONDARY_TEXT,
-              borderColor: BORDER_COLOR,
-              margin: "40px 0 16px 0",
-              fontSize: "15px",
-            }}
-          >
-            비고
-          </Divider>
-          <div
-            style={{
-              whiteSpace: "pre-wrap",
-              color: PRIMARY_TEXT,
-              lineHeight: 1.8,
-              fontSize: "15px",
-              minHeight: "50px",
-              backgroundColor: MUTED_BG,
-              borderRadius: 12,
-              padding: "12px 14px",
-              border: `1px solid ${BORDER_COLOR}`,
-            }}
-          >
-            {workLog.sideContent || (
-              <Text type="secondary" style={{ color: SECONDARY_TEXT }}>
-                -
-              </Text>
-            )}
-          </div>
+          {isWorkLogBoard && (
+            <>
+              <Divider
+                titlePlacement="start"
+                style={{
+                  color: SECONDARY_TEXT,
+                  borderColor: BORDER_COLOR,
+                  margin: "40px 0 16px 0",
+                  fontSize: "15px",
+                }}
+              >
+                비고
+              </Divider>
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: PRIMARY_TEXT,
+                  lineHeight: 1.8,
+                  fontSize: "15px",
+                  minHeight: "50px",
+                  backgroundColor: MUTED_BG,
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  border: `1px solid ${BORDER_COLOR}`,
+                }}
+              >
+                {workLog.sideContent || (
+                  <Text type="secondary" style={{ color: SECONDARY_TEXT }}>
+                    -
+                  </Text>
+                )}
+              </div>
+            </>
+          )}
 
           {/* 요약 내용 (조건부 렌더링) */}
-          {workLog.summaryContent && (
+          {isDailyBoard && workLog.summaryContent && (
             <>
               <Divider
                 titlePlacement="start"
@@ -463,24 +543,47 @@ function Detail() {
           )}
 
           {/* 하단: 수정하기 버튼만 */}
-          <div style={{ marginTop: "40px", textAlign: "right" }}>
-            <Link to={`/Modify/${id}`}>
+          {isOwner && (
+            <div
+              style={{
+                marginTop: "40px",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "8px",
+              }}
+            >
               <Button
+                onClick={handleDelete}
                 type="primary"
                 style={{
-                  backgroundColor: ACCENT_COLOR,
-                  borderColor: ACCENT_COLOR,
                   height: "44px",
-                  padding: "0 24px",
+                  padding: "0 18px",
                   fontWeight: 500,
                   fontSize: "16px",
                   borderRadius: 999,
                 }}
               >
-                수정하기
+                삭제하기
               </Button>
-            </Link>
-          </div>
+
+              <Link to={`/Modify/${id}`}>
+                <Button
+                  type="primary"
+                  style={{
+                    backgroundColor: ACCENT_COLOR,
+                    borderColor: ACCENT_COLOR,
+                    height: "44px",
+                    padding: "0 24px",
+                    fontWeight: 500,
+                    fontSize: "16px",
+                    borderRadius: 999,
+                  }}
+                >
+                  수정하기
+                </Button>
+              </Link>
+            </div>
+          )}
         </Card>
       </Content>
     </Layout>

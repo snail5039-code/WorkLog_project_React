@@ -17,6 +17,10 @@ import HandoverWrite from './pages/HandoverWrite';
 import HandoverList from './pages/HandoverList';
 import WeeklyWrite from './pages/WeeklyWrite';
 import MonthlyWrite from './pages/MonthlyWrite';
+import CustomerCenter from './pages/CustomerCenter';
+import About from './pages/About';
+import Guide from './pages/Guide';
+import Coming from './pages/Coming';
 
 // ✅ 새로 만들 레이아웃
 import MainLayout from './layouts/MainLayout';
@@ -44,6 +48,10 @@ function App(){
             <Route path="/monthlyWrite" element={<MonthlyWrite />} />
             <Route path="/detail/:id" element={<Detail />} />
             <Route path="/modify/:id" element={<Modify />} />
+            <Route path="/customerCenter" element={<CustomerCenter />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/guide" element={<Guide />} />
+            <Route path="/coming" element={<Coming />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/logout" element={<Logout />} />
             {/* 나중에 /daily, /weekly 이런 것도 여기 안에 추가하면 됨 */}
