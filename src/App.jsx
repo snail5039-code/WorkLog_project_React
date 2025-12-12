@@ -21,7 +21,7 @@ import CustomerCenter from './pages/CustomerCenter';
 import About from './pages/About';
 import Guide from './pages/Guide';
 import Coming from './pages/Coming';
-
+import FloatingChatBot from "./components/FloatingChatBot";
 // ✅ 새로 만들 레이아웃
 import MainLayout from './layouts/MainLayout';
 
@@ -56,8 +56,8 @@ function App(){
             <Route path="/logout" element={<Logout />} />
             {/* 나중에 /daily, /weekly 이런 것도 여기 안에 추가하면 됨 */}
           </Route>
-
         </Routes>
+        <FloatingChatBot />
       </AuthProvider>
     </BrowserRouter>
   );
