@@ -105,7 +105,7 @@ function Home() {
       title: "템플릿 등록",
       image: under4,
       linkText: "템플릿 관리",
-      linkTo: "/templates", // 나중에 라우트 만들면 됨
+      linkTo: "/list?boardId=7", // 나중에 라우트 만들면 됨
     },
     {
       id: 5,
@@ -240,23 +240,33 @@ function Home() {
         </section>
 
         {/* 3. 겹쳐진 사진 섹션 (글목록 대신) */}
-        <section className="relative h-[1000px] md:h-[950px]">
+        <section className="relative z-0 h-[1000px] md:h-[950px] overflow-hidden rounded-3xl">
+          {/* ✅ 배경: 연한 그라데이션 */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-b from-white via-gray-50 to-white" />
+
+          {/* ✅ 배경: 블러 블롭 (추천) */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <div className="absolute -top-28 -left-28 w-[560px] h-[560px] bg-teal-300/25 rounded-full blur-3xl" />
+            <div className="absolute top-24 -right-28 w-[560px] h-[560px] bg-indigo-300/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-28 left-1/3 w-[560px] h-[560px] bg-rose-300/15 rounded-full blur-3xl" />
+          </div>
+
           {/* 위 사진 (먼저 등장) */}
           <div
-            className="absolute left-4 md:left-24 top-0 w-[75%] md:w-[50%] h-[480px] md:h-[560px] rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-white"
+            className="absolute z-10 left-4 md:left-24 top-0 w-[75%] md:w-[50%] h-[480px] md:h-[560px] rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-white"
             data-aos="fade-right"
             data-aos-offset="200"
           >
             <img
               src={mainImg}
               alt="사용하는 사진 넣기"
-              className="w-full h-full object-cover border-gray-500"
+              className="w-full h-full object-cover"
             />
           </div>
-
+ 
           {/* 아래쪽 겹치는 사진 (스크롤 좀 더 내리면 등장) */}
           <div
-            className="absolute right-4 md:right-24 bottom-0 w-[85%] md:w-[60%] h-[450px] md:h-[490px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white"
+            className="absolute z-10 right-4 md:right-24 bottom-0 w-[85%] md:w-[60%] h-[450px] md:h-[490px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white"
             data-aos="fade-left"
             data-aos-delay="250"
             data-aos-offset="230"
@@ -264,7 +274,7 @@ function Home() {
             <img
               src={mainImg2}
               alt="사용하는 사진 넣기"
-              className="w-full h-full object-cover border-gray-500"
+              className="w-full h-full object-cover"
             />
           </div>
         </section>

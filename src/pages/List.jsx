@@ -17,6 +17,9 @@ const BOARD_NAME_MAP = {
   4: "일일 업무일지 게시판",
   5: "주간 업무일지 게시판",
   6: "월간 업무일지 게시판",
+  7: "템플릿 등록 게시판",
+  8: "자주 묻는 질문 게시판",
+  9: "오류사항 접수 게시판",
 };
 
 function List() {
@@ -158,19 +161,33 @@ function List() {
                      
           </tbody>
         </table>
-        {/* 페이징 */}
-        <div className="mt-4 flex justify-center">
-          <Pagination
-            current={page}
-            pageSize={pageSize}
-            total={totalCount}
-            onChange={(p, size) => {
-              setPage(p);
-              setPageSize(size);
-            }}
-            showSizeChanger
-            showTotal={(total) => `총 ${total}건`}
-          />
+        {/* 페이징 + 글쓰기 버튼 줄 */}
+        <div className="mt-4 flex items-center justify-between">
+          {/* 왼쪽: 페이지네이션 */}
+          <div className="flex-1 flex justify-center">
+            <Pagination
+              current={page}
+              pageSize={pageSize}
+              total={totalCount}
+              onChange={(p, size) => {
+                setPage(p);
+                setPageSize(size);
+              }}
+              showSizeChanger
+              showTotal={(total) => `총 ${total}건`}
+            />
+          </div>
+
+          {/* 오른쪽: 템플릿 게시판(7번)일 때만 글쓰기 버튼 */}
+          {[7, 8, 9].includes(boardId) && (
+            <button
+              type="button"
+              onClick={() => navigate(`/write?boardId=${boardId}`)}
+              className="ml-4 px-5 py-2 rounded  text-white text-sm font-semibold shadow hover:border"
+            >
+              글쓰기
+            </button>
+          )}
         </div>
       </div>
     </div>

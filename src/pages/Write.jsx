@@ -1,6 +1,16 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, Input, Form, Modal, message, Spin, Select } from "antd";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Button,
+  Input,
+  Form,
+  Modal,
+  message,
+  Spin,
+  Select,
+  Upload,
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import { AuthContext } from "../context/AuthContext";
 import { TEMPLATE_MAIN_PLACEHOLDER } from "../config/templateSummaryConfig";
 
@@ -28,12 +38,20 @@ const TEMPLATE_OPTIONS = [
 
 function Write() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [form] = Form.useForm(); // 이 넘이 관리함!
 
-  const selectedBoardId = Form.useWatch("boardId", form) ?? 4; // 셀렉트에서 고른거 실시간 감시
+  // ✅ 1) URL 쿼리에서 boardId 먼저 뽑고
+  const boardIdFromQuery = Number(searchParams.get("boardId") || 4);
+
+  const selectedBoardId = Form.useWatch("boardId", form) ?? boardIdFromQuery; // 셀렉트에서 고른거 실시간 감시
   const isDailyBoard = selectedBoardId === 4;
+  const isTemplateBoard = selectedBoardId === 7;
+  const isFaqBoard = selectedBoardId === 8;
+  const isErrorBoard = selectedBoardId === 9;
+  const isFixedBoard = isTemplateBoard || isFaqBoard || isErrorBoard;
 
   const [isSubmitLoading, setIsSubmitLoading] = useState(false); // 얘가 요약할때 로딩 창임
   // Context에서 로그인 ID를 가져옵니다.
@@ -41,6 +59,9 @@ function Write() {
   // 메인 콘텐츠 TextArea에 접근하기 위한 Ref
   const mainContentRef = useRef(null);
 
+  useEffect(() => {
+    form.setFieldsValue({ boardId: boardIdFromQuery });
+  }, [boardIdFromQuery, form]);
   useEffect(() => {
     // isLoginedId가 0일 때만 로그인 검증 로직을 수행합니다.
     // 타입 비교를 위해 === 대신 ==을 사용하던 부분을 ===으로 수정합니다.
@@ -77,7 +98,8 @@ function Write() {
   if (!authLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="로그인 상태 확인 중..." />
+        <Spin size="large" />
+        <p className="mt-2 text-gray-600">로그인 상태 확인 중...</p>
       </div>
     );
   }
@@ -161,7 +183,13 @@ function Write() {
         }
       );
       if (response.ok) {
-        openModal("등록이 완료되었습니다. (AI 요약 포함!)");
+        if (boardId === 7) {
+          // 템플릿 게시판에서 작성한 경우
+          openModal("템플릿이 등록되었습니다.");
+        } else {
+          // 나머지 게시판(일일업무 등)
+          openModal("등록이 완료되었습니다. (AI 요약 포함!)");
+        }
       } else {
         // 서버 응답 상태는 OK가 아니지만, 응답을 받은 경우 (4xx, 5xx)
         openModal(`등록을 실패했습니다. (HTTP Code: ${response.status})`);
@@ -195,22 +223,51 @@ function Write() {
             <span className="text-lg font-semibold text-gray-700">게시판</span>
           }
           name="boardId"
-          initialValue={4} // 기본: 일일업무일지
           rules={[{ required: true, message: "게시판을 선택해 주세요." }]}
           className="mb-2"
         >
-          <Select
-            style={{ maxWidth: 320 }}
-            options={(isLoginedId === 1
-              ? BOARD_OPTIONS
-              : BOARD_OPTIONS.filter((b) => b.id !== 1)
-            ).map((b) => ({
-              value: b.id,
-              label: b.label,
-            }))}
-          />
+          {isFixedBoard  ? (
+            // ⭐ 7, 8, 9번은 셀렉트 숨기고 고정 텍스트만 표시
+            <div className="px-3 py-2 rounded border bg-gray-100 text-gray-700">
+              {selectedBoardId === 7 && "템플릿 등록 게시판"}
+              {selectedBoardId === 8 && "자주 묻는 질문 게시판"}
+              {selectedBoardId === 9 && "오류사항 접수 게시판"}
+            </div>
+          ) : (
+            // ⭐ 나머지 게시판에서는 기존처럼 Select 사용
+            <Select
+              style={{ maxWidth: 320 }}
+              options={(isLoginedId === 1
+                ? BOARD_OPTIONS
+                : BOARD_OPTIONS.filter((b) => b.id !== 1)
+              ).map((b) => ({
+                value: b.id,
+                label: b.label,
+              }))}
+            />
+          )}
         </Form.Item>
-
+        {/* ⭐ 템플릿 게시판 전용: 첨부파일 등록 */}
+        {isTemplateBoard && (
+          <Form.Item
+            label={
+              <span className="text-lg font-semibold text-gray-700">
+                첨부파일 등록
+              </span>
+            }
+            name="files"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+            rules={[
+              { required: true, message: "템플릿 파일을 업로드해 주세요." },
+            ]}
+            className="mb-0"
+          >
+            <Upload multiple beforeUpload={() => false}>
+              <Button icon={<UploadOutlined />}>파일 선택</Button>
+            </Upload>
+          </Form.Item>
+        )}
         <Form.Item
           label={
             <span className="text-lg font-semibold text-gray-700">Title</span>

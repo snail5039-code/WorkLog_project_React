@@ -118,18 +118,30 @@ function Login() {
         }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        openModal(values.loginId + "님 환영합니다.");
-        setTimeout(() => {
-          setIsLoginedId(data);
-          navigate("/");
-        }, 1200);
-      } else {
-        const errorMessage = await response.text();
-        console.error("로그인 실패:", response.status, errorMessage);
-        openModal("아이디 또는 비밀번호가 일치하지 않습니다.");
+      // 응답 바디 먼저 꺼내두기
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        // HTTP 에러 (500, 400 등)
+        console.error("로그인 실패:", response.status, data);
+        openModal("로그인 요청에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        return;
       }
+
+      // ✅ 여기부터는 HTTP 200 이지만,
+      //    "진짜 로그인 성공인지" 한 번 더 체크
+      //    (data가 숫자라면 0/음수는 실패로 취급)
+      if (!data || (typeof data === "number" && data <= 0)) {
+        openModal("아이디 또는 비밀번호가 일치하지 않습니다.");
+        return;
+      }
+
+      // ✅ 여기까지 통과했으면 진짜 성공
+      openModal(values.loginId + "님 환영합니다.");
+      setTimeout(() => {
+        setIsLoginedId(data); // data가 userId면 그대로, 객체면 data.id 이런 식으로
+        navigate("/");
+      }, 1200);
     } catch (error) {
       console.error("로그인 오류:", error);
       openModal("서버와 연결을 확인하세요.");

@@ -86,7 +86,7 @@ function CustomerCenter() {
 
         {/* 🔹 아래 작은 네모 3개 */}
         <Row gutter={[24, 24]} justify="center">
-          {/* 상담원 연결 */}
+          
           <Col xs={24} sm={8}>
             <Card
               hoverable
@@ -98,18 +98,17 @@ function CustomerCenter() {
                 minHeight: 150,
               }}
               onClick={() => {
-                // TODO: 추후 상담 페이지로 이동
-                // navigate("/support/chat");
+                navigate("/list?boardId=7");
               }}
             >
               <CustomerServiceOutlined
                 style={{ fontSize: 40, color: "#2563eb", marginBottom: 12 }}
               />
               <Title level={5} style={{ marginBottom: 4, color: PRIMARY_TEXT }}>
-                상담원 연결
+                템플릿 등록
               </Title>
               <Text style={{ color: SECONDARY_TEXT, fontSize: 13 }}>
-                채팅 또는 전화 상담을 통해<br />직접 문의하고 싶어요.
+                새로운 템플릿을 <br /> 등록하고 싶어요.
               </Text>
             </Card>
           </Col>
@@ -126,10 +125,10 @@ function CustomerCenter() {
                 minHeight: 150,
               }}
               onClick={() => {
-                // TODO: FAQ 페이지로 이동
-                // navigate("/support/faq");
+                navigate("/list?boardId=8");
               }}
             >
+              
               <QuestionCircleOutlined
                 style={{ fontSize: 40, color: "#10b981", marginBottom: 12 }}
               />
@@ -154,8 +153,7 @@ function CustomerCenter() {
                 minHeight: 150,
               }}
               onClick={() => {
-                // TODO: 오류 신고 페이지로 이동
-                // navigate("/support/report");
+                navigate("/list?boardId=9");
               }}
             >
               <BugOutlined

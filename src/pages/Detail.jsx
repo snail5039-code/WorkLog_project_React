@@ -1,6 +1,16 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Button, message, Typography, Layout, Card, Row, Col, Divider } from "antd";
+import {
+  Button,
+  message,
+  Typography,
+  Layout,
+  Card,
+  Row,
+  Col,
+  Divider,
+  Modal,
+} from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { AuthContext } from "../context/AuthContext";
 import SummaryTable from "../components/summary/SummaryTable";
@@ -37,6 +47,7 @@ function Detail() {
   const isDailyBoard = boardId === 4;
   const isWorkLogBoard = boardId === 4 || boardId === 5 || boardId === 6;
   const isOwner = isLoginedId !== 0 && workLog?.memberId === isLoginedId;
+  const isTemplateBoard = boardId === 7;
 
   useEffect(() => {
     if (!authLoaded) return; // 세션 확인 전에는 아무것도 안 함
@@ -367,6 +378,60 @@ function Detail() {
           >
             {workLog.mainContent}
           </div>
+
+          {/* 🧩 템플릿 게시판(7번) 전용: 첨부 템플릿 파일 다운로드 버튼 */}
+          {isTemplateBoard && (
+            <>
+              <Divider
+                titlePlacement="start"
+                style={{
+                  color: SECONDARY_TEXT,
+                  borderColor: BORDER_COLOR,
+                  margin: "32px 0 16px 0",
+                  fontSize: "15px",
+                }}
+              >
+                템플릿 파일
+              </Divider>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  marginBottom: "12px",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  backgroundColor: MUTED_BG,
+                  border: `1px dashed ${BORDER_COLOR}`,
+                }}
+              >
+                <Text style={{ color: SECONDARY_TEXT, fontSize: "13px" }}>
+                  이 게시글에 첨부된 DOCX 템플릿 파일을 다운로드합니다.
+                </Text>
+
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={() => {
+                    window.location.href = `http://localhost:8081/api/usr/work/${id}/template-download`;
+                  }}
+                  style={{
+                    backgroundColor: ACCENT_COLOR,
+                    borderColor: ACCENT_COLOR,
+                    height: "40px",
+                    padding: "0 18px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                  }}
+                >
+                  템플릿 다운로드
+                </Button>
+              </div>
+            </>
+          )}
 
           {/* 📄 AI 요약 DOCX 다운로드 (첨부파일 리스트는 제거) */}
           {isWorkLogBoard && (
