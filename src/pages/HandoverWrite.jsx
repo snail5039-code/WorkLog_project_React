@@ -1,7 +1,8 @@
 import React, { useState, useContext, useEffect } from "react";
-import { Card, Form, Input, DatePicker, Button, message, Spin } from "antd";
+import { Card, Form, Input, DatePicker, Button, message, Spin, Modal } from "antd";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { div } from "framer-motion/client";
 
 const { RangePicker } = DatePicker;
 const LOGIN_REQUIRED_KEY = "login_required_message";
@@ -87,8 +88,22 @@ function HandoverWrite() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      
+      // 모달창 띄우고 확인 누르면 목록 이동
+      Modal.success({
+        title: "인수인계서 등록 완료",
+        content: (
+          <div>
+            <p>인수인계서가 저장되고 다운로드되었습니다.</p>
+            <p>목록 페이지로 이동합니다.</p>
+          </div>
+        ),
+        onOk: () => {
+          navigate("/handoverList");
+        },
+      })
 
-      message.success("인수인계서 다운로드가 완료되었습니다.");
+      form.resetFields();
     } catch (err) {
       console.error(err);
       message.error("인수인계서 생성/다운로드 중 오류가 발생했습니다.");
@@ -166,7 +181,7 @@ function HandoverWrite() {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit">
+            <Button type="primary" htmlType="submit" loading={loading}>
               인수인계서 생성 및 다운로드
             </Button>
           </Form.Item>

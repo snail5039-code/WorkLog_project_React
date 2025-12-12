@@ -1,25 +1,27 @@
+// src/pages/Modify.jsx
 import React, { useState, useContext, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { message } from "antd";
 import { AuthContext } from "../context/AuthContext";
 
-//  디자인 나중에 수정 예정
-// 나중에 aync-await 문법으로 변경 예정
 const LOGIN_REQUIRED_KEY = "login_required_message";
 
 function Modify() {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
   const [title, setTitle] = useState("");
   const [mainContent, setMainContent] = useState("");
   const [sideContent, setSideContent] = useState("");
 
   const { isLoginedId, authLoaded } = useContext(AuthContext);
 
+  // 로그인 체크
   useEffect(() => {
-    if (!authLoaded) return; // 세션 조회 끝나기 전엔 아무 것도 안 함
+    if (!authLoaded) return;
 
     if (isLoginedId === 0) {
       message.error({
@@ -31,9 +33,10 @@ function Modify() {
     }
   }, [authLoaded, isLoginedId, navigate]);
 
+  // 상세 데이터 불러오기
   useEffect(() => {
     if (!authLoaded) return;
-    if (isLoginedId === 0) return; // 비로그인 상태에선 요청 X
+    if (isLoginedId === 0) return;
 
     const API_URL = `http://localhost:8081/api/usr/work/detail/${id}`;
 
@@ -45,9 +48,9 @@ function Modify() {
         }
         const fetchedData = await res.json();
         setArticle(fetchedData);
-        setTitle(fetchedData.title);
-        setMainContent(fetchedData.mainContent);
-        setSideContent(fetchedData.sideContent);
+        setTitle(fetchedData.title || "");
+        setMainContent(fetchedData.mainContent || "");
+        setSideContent(fetchedData.sideContent || "");
       } catch (error) {
         console.error("데이터 불러오기 실패:", error);
         message.error("게시글을 불러오는 중 오류가 발생했습니다.");
@@ -59,149 +62,182 @@ function Modify() {
     fetchDetail();
   }, [authLoaded, isLoginedId, id]);
 
-  // ✅ 세션 확인 전이거나, 비로그인 상태면 화면 그리지 않음
-  if (!authLoaded || isLoginedId === 0) {
-    return null;
-  }
-
-  // 렌더링 오류 방지 코드임
-  if (loading) {
-    return <div>게시글 로딩 중</div>;
-  }
-
-  if (!article || Object.keys(article).length == 0) {
-    return <div>게시글이 없습니다.</div>;
-  }
+  if (!authLoaded || isLoginedId === 0) return null;
+  if (loading) return <div className="text-center mt-10">게시글 로딩 중...</div>;
+  if (!article || Object.keys(article).length === 0)
+    return <div className="text-center mt-10">게시글이 없습니다.</div>;
 
   const handleSubmit = async () => {
     const modifyData = {
-      title: title,
-      mainContent: mainContent,
-      sideContent: sideContent,
+      title,
+      mainContent,
+      sideContent,
     };
-    console.log(modifyData);
+
     try {
       const response = await fetch(
         `http://localhost:8081/api/usr/work/modify/${id}`,
         {
-          method: "post",
-          headers: { "content-type": "application/json" },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(modifyData),
         }
       );
+
       if (response.ok) {
-        const result = await response.text();
-        alert("수정이 완료되었습니다. 서버 응답:" + result);
+        await response.text();
+        message.success("수정이 완료되었습니다.");
         navigate(`/detail/${id}`);
       } else {
-        alert("수정 실패! 서버 상태 코드:" + response.status);
+        message.error("수정 실패! 코드 : " + response.status);
       }
     } catch (error) {
       console.error("통신오류", error);
-      alert("서버와 통신할 수 없습니다.");
+      message.error("서버와 통신할 수 없습니다.");
     }
   };
 
   return (
-    // 디자인 적용: 최상위 컨테이너 스타일링 (중앙 정렬, 그림자, 둥근 모서리)
-    <div className="p-8 max-w-3xl mx-auto bg-white shadow-2xl rounded-xl mt-10">
-      {/* 네비게이션 링크 컨테이너 */}
-      <div className="flex justify-between border-b pb-4 mb-6">
-        <Link
-          to="/"
-          className="text-blue-600 hover:text-blue-800 font-medium transition duration-150 p-2 rounded hover:bg-gray-100"
-        >
-          홈으로
-        </Link>
-        <Link
-          to="/list"
-          className="text-gray-600 hover:text-gray-800 font-medium transition duration-150 p-2 rounded hover:bg-gray-100"
-        >
-          목록으로 돌아가기
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* 상단 네비 + 제목 영역 */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Link
+              to="/"
+              className="hover:text-blue-600 transition-colors duration-150"
+            >
+              홈
+            </Link>
+            <span>/</span>
+            <Link
+              to="/list"
+              className="hover:text-blue-600 transition-colors duration-150"
+            >
+              목록
+            </Link>
+            <span>/</span>
+            <span className="text-gray-700 font-medium">수정</span>
+          </div>
 
-      {/* 제목 스타일링 */}
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-6 border-b-4 border-red-500 pb-2">
-        {id}번 게시글 수정
-      </h2>
-
-      {/* 게시글 정보 (읽기 전용) 스타일링 */}
-      <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-8 flex flex-wrap justify-between text-sm text-gray-700">
-        {/* 제목 입력 필드 */}
-        <div className="w-full mb-4">
-          <p className="flex items-center">
-            <span className="font-semibold text-gray-800 mr-2 min-w-[50px]">
-              제목
-            </span>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              // 입력 필드 스타일링: 전체 너비, 둥근 모서리, 포커스 시 링 효과
-              className="shadow-sm border border-gray-300 rounded-lg w-full py-2.5 px-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-150"
-            />
-          </p>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+            게시글 ID&nbsp;#{id}
+          </span>
         </div>
 
-        {/* 나머지 정보는 2열로 배치 */}
-        <p className="w-full sm:w-1/2 mb-2">
-          <span className="font-semibold text-gray-800 mr-2">작성자</span>{" "}
-          {article.writerName}
-        </p>
-        <p className="w-full sm:w-1/2 mb-2">
-          <span className="font-semibold text-gray-800 mr-2">작성일</span>{" "}
-          {article.regDate}
-        </p>
-        <p className="w-full sm:w-1/2">
-          <span className="font-semibold text-gray-800 mr-2">수정일</span>{" "}
-          {article.updateDate}
-        </p>
-      </div>
+        {/* 메인 카드 */}
+        <div className="bg-white shadow-xl rounded-2xl border border-gray-200 overflow-hidden">
+          {/* 카드 헤더 */}
+          <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-red-50 to-orange-50">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
+              게시글 수정
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              작성한 내용을 수정한 뒤, 아래의{" "}
+              <span className="font-semibold text-red-500">[수정 완료]</span>{" "}
+              버튼을 눌러 저장하세요.
+            </p>
+          </div>
 
-      {/* 주요 업무 내용 섹션 */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-3 mt-6 border-b pb-1">
-          주요 업무 내용
-        </h2>
-        <div>
-          {/* Textarea처럼 보이도록 높이 지정 */}
-          <input
-            type="text"
-            value={mainContent}
-            onChange={(e) => setMainContent(e.target.value)}
-            className="shadow-sm border border-gray-300 rounded-lg w-full py-2.5 px-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-150 h-24"
-          />
+          {/* 카드 바디 */}
+          <div className="px-6 py-6 space-y-8">
+            {/* 메타 정보 */}
+            <section>
+              <h2 className="text-sm font-semibold text-gray-500 mb-3">
+                기본 정보
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex flex-col">
+                  <span className="text-gray-500 mb-1">작성자</span>
+                  <span className="font-medium text-gray-900">
+                    {article.writerName}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-500 mb-1">작성일</span>
+                  <span className="text-gray-800">{article.regDate}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-500 mb-1">마지막 수정일</span>
+                  <span className="text-gray-800">
+                    {article.updateDate || "-"}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* 제목 입력 */}
+            <section className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                제목
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="게시글 제목을 입력하세요."
+                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+              />
+            </section>
+
+            {/* 주요 업무 내용 */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700">
+                  주요 업무 내용
+                </label>
+                <span className="text-xs text-gray-400">
+                  실제 근무 내용을 자세히 적어주세요.
+                </span>
+              </div>
+              <textarea
+                value={mainContent}
+                onChange={(e) => setMainContent(e.target.value)}
+                placeholder="오늘 수행한 업무, 진행 상황, 특이사항 등을 작성하세요."
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition min-h-[140px] resize-y"
+              />
+            </section>
+
+            {/* 비고 */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700">
+                  비고
+                </label>
+                <span className="text-xs text-gray-400">
+                  선택 사항 – 전달사항, 메모 등을 적을 수 있어요.
+                </span>
+              </div>
+              <textarea
+                value={sideContent}
+                onChange={(e) => setSideContent(e.target.value)}
+                placeholder="추가로 남기고 싶은 내용이 있다면 작성하세요."
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition min-h-[80px] resize-y"
+              />
+            </section>
+          </div>
+
+          {/* 카드 푸터 - 버튼 영역 */}
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex flex-col md:flex-row gap-3 md:gap-2 md:items-center md:justify-between">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100 transition"
+            >
+              취소하고 돌아가기
+            </button>
+
+            <button
+              onClick={handleSubmit}
+              className="w-full md:w-auto inline-flex items-center justify-center px-6 py-2.5 text-white text-sm font-semibold rounded-xl shadow-lg hover:border-2 transition transform hover:translate-y-[1px]"
+            >
+              수정 완료
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* 비고 섹션 */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-3 mt-6 border-b pb-1">
-          비고
-        </h2>
-        <div>
-          {/* Textarea처럼 보이도록 높이 지정 */}
-          <input
-            type="text"
-            value={sideContent}
-            onChange={(e) => setSideContent(e.target.value)}
-            className="shadow-sm border border-gray-300 rounded-lg w-full py-2.5 px-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-150 h-16"
-          />
-        </div>
-      </div>
-
-      {/* 수정 완료 버튼 스타일링 */}
-      <div className="mt-8 text-center">
-        <button
-          onClick={handleSubmit}
-          // 버튼 스타일링: 눈에 띄는 붉은색, 호버 애니메이션 효과
-          className="inline-block p-3 px-6 bg-red-600 text-white text-lg font-bold rounded-xl hover:bg-red-700 transition duration-300 shadow-lg transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-red-300"
-        >
-          수정 완료
-        </button>
       </div>
     </div>
   );
 }
+
 export default Modify;

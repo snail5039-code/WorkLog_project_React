@@ -1,19 +1,10 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import {
-  Button,
-  message,
-  Divider,
-  Card,
-  Layout,
-  Typography,
-  Row,
-  Col,
-  Modal,
-} from "antd";
+import { Button, message, Typography, Layout, Card, Row, Col, Divider } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { AuthContext } from "../context/AuthContext";
 import SummaryTable from "../components/summary/SummaryTable";
+import CommentBox from "../components/work/CommentBox";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -141,7 +132,7 @@ function Detail() {
         }
       } catch (error) {
         console.error("데이터 불러오기 실패:", error);
-         message.error("게시글을 불러오는 중 오류가 발생했습니다.");
+        message.error("게시글을 불러오는 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
       }
@@ -541,7 +532,20 @@ function Detail() {
               )}
             </>
           )}
+          {/* 댓글 영역 */}
+          <Divider
+            titlePlacement="start"
+            style={{
+              color: SECONDARY_TEXT,
+              borderColor: BORDER_COLOR,
+              margin: "40px 0 16px 0",
+              fontSize: "15px",
+            }}
+          >
+            댓글
+          </Divider>
 
+          <CommentBox workLogId={id} />
           {/* 하단: 수정하기 버튼만 */}
           {isOwner && (
             <div
