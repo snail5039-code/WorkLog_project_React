@@ -318,6 +318,7 @@ function Write() {
             placeholder="(예시를 참고해서, 실제 업무 내용을 자유롭게 수정/추가해서 작성해 주세요.)"
             // Input.TextArea 자체의 테두리와 포커스 스타일을 제거하고 배경을 투명하게 설정하여 컨테이너 스타일과 통합
             className="border-none focus:ring-0 focus:border-0 bg-transparent text-base p-2"
+            style={{ resize: "none" }} 
           />
         </Form.Item>
         {isDailyBoard && (
