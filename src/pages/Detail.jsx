@@ -610,7 +610,7 @@ function Detail() {
             댓글
           </Divider>
 
-          <CommentBox workLogId={id} />
+          <CommentBox workLogId={id} currentUserId={isLoginedId} />
           {/* 하단: 수정하기 버튼만 */}
           {isOwner && (
             <div
@@ -621,20 +621,19 @@ function Detail() {
                 gap: "8px",
               }}
             >
-              <Button
-                onClick={handleDelete}
-                type="primary"
-                style={{
-                  height: "44px",
-                  padding: "0 18px",
-                  fontWeight: 500,
-                  fontSize: "16px",
-                  borderRadius: 999,
-                }}
-              >
-                삭제하기
-              </Button>
-
+                <Button
+                  onClick={handleDelete}
+                  type="primary"
+                  style={{
+                    height: "44px",
+                    padding: "0 18px",
+                    fontWeight: 500,
+                    fontSize: "16px",
+                    borderRadius: 999,
+                  }}
+                >
+                  삭제하기
+                </Button>
               <Link to={`/Modify/${id}`}>
                 <Button
                   type="primary"
